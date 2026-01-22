@@ -1,4 +1,4 @@
-    SUBROUTINE  ocnstep (U,X,kforce)
+    SUBROUTINE  ocnstep (U,X,kforce,absorp_in)
 !-----------------------------------------------------------------------
 ! Note in this version:
 !   -  ADVECTIVE CORRECTIONS AVAILABLE
@@ -33,6 +33,7 @@
 ! Input/Output
     real :: U(NZP1,NVEL), X(NZP1,NSCLR)
     real :: kforce(forcing_var_cnt)
+    real :: absorp_in(NZ)
 
 ! Local Common Blocks -- relocated to module
 

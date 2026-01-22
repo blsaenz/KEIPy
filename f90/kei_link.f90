@@ -55,6 +55,8 @@ MODULE link
   USE kei_ocncommon
   USE kei_eco
   USE kei_hacks
+  USE kei_sw
+
 
   IMPLICIT NONE
 
@@ -67,7 +69,7 @@ MODULE link
     X(NZP1,NSCLR),  &   !!! scalars
     aflx(NSFLXSP2), &   !!!
     flx(11),        &   !!! diagnostic flux data structure
-    Xprev(NZP1,2)      !!! T&S before (potential) data assimilation
+    Xprev(NZP1,2)       !!! T&S before (potential) data assimilation
 
   DOUBLE PRECISION, save :: &
     timed, &            !!! model time
@@ -79,7 +81,10 @@ MODULE link
     SCocn, &            !!! salt content ocean
     HCice, &            !!! heat content ice
     SCice, &            !!! salt content ice
-    FCice               !!!
+    FCice, &            !!!
+    par_phyto(NZ), &    ! par (Watts) at depth from ecosys that may be needed by seaweed modules
+    absorp_in(NZ), &    ! external sources shortwave irradiance absorption (1/m)
+    absorp_out(NZ)      ! total ecosystem shortwave irradiance absorption (1/m)
 
   ! maybe can get rid of these?
   REAL,save :: &
@@ -131,6 +136,16 @@ CONTAINS
 
   END SUBROUTINE get_tracers
 
+!!! ************************************************************************
+  SUBROUTINE get_sw(U_out,X_out)
+    REAL, INTENT(OUT) :: &
+      U_out(NZ,NVEL),  &
+      X_out(NZ,NSCLR)
+
+      U_out = U(1:NZ,:)
+      X_out = X(1:NZ,:)
+
+  END SUBROUTINE get_sw
 
 !!! ************************************************************************
   SUBROUTINE get_fluxes(flux_out)
@@ -181,6 +196,8 @@ CONTAINS
       sal_correction_rate = value
     elseif (param == 'sw_scale_factor') then
       sw_scale_factor = value
+    elseif (param == 'absorp_baseline') then
+      absorp_baseline = value
     else
       print *,'set_param_real: param not understood or available!'
     endif
@@ -193,6 +210,8 @@ CONTAINS
     INTEGER, intent(in) :: value
     if (param == 'lbio') then
       lbio = value
+    elseif (param == 'lsw') then
+      lsw = value
     elseif (param == 'lice') then
       lice = value
     elseif (param == 'nend') then
@@ -231,7 +250,6 @@ CONTAINS
 
     elseif (param == 'atm_flux_to_ocn_surface') then
       value = atm_flux_to_ocn_surface
-
     elseif (param == 'atm_flux_to_ice_surface') then
       value = atm_flux_to_ice_surface
     elseif (param == 'ice_ocean_bottom_flux') then
@@ -250,6 +268,26 @@ CONTAINS
       value = snow_ice_volume
     elseif (param == 'snow_precip_mass') then
       value = snow_precip_mass
+
+
+    elseif (param == 'sw_sst') then
+      value = sw_sst(1,1)
+    elseif (param == 'sw_chl') then
+      value = sw_chl(1,1)
+    elseif (param == 'sw_par') then
+      value = sw_par(1,1)
+    elseif (param == 'sw_no3') then
+      value = sw_no3_(1,1)
+    elseif (param == 'sw_nh4') then
+      value = sw_nh4_(1,1)
+    elseif (param == 'sw_po4') then
+      value = sw_po4_(1,1)
+    elseif (param == 'sw_fe') then
+      value = sw_fe_(1,1)
+    elseif (param == 'sw_i') then
+      value = DBLE(sw_i)
+    elseif (param == 'sw_absorp') then
+      value = sw_absorp
 
     else
         value = -99999.0
@@ -299,6 +337,8 @@ CONTAINS
       nzp1_data = Xprev(1:NZ,2) + sref
 
     ! nz length
+    elseif (param == 'par') then
+      nzp1_data = par_phyto(1:NZ)
     elseif (param == 'tot_prod') then
       nzp1_data = tot_prod
     elseif (param == 'sp_Fe_lim') then
@@ -334,12 +374,12 @@ CONTAINS
     elseif (param == 'ghat') then
       nzp1_data = ghat(1:NZ)
 
-
     else
       nzp1_data = -99999.0
     endif
 
   END SUBROUTINE get_nz_data
+
 
 !!! ************************************************************************
   SUBROUTINE get_ice_data(param,ice_data)
@@ -380,6 +420,16 @@ CONTAINS
 
 
 !!! ************************************************************************
+  SUBROUTINE get_sw_data(sw_tracer_block)
+    DOUBLE PRECISION, INTENT(OUT) :: &
+      sw_tracer_block(n_sw_outputs)
+
+    CALL sw_get_outputs(sw_tracer_block)
+
+  END SUBROUTINE get_sw_data
+
+
+!!! ************************************************************************
 ! Call this BEFORE setting parameters through the link interface ...
 SUBROUTINE KEI_param_init
 
@@ -408,7 +458,12 @@ SUBROUTINE KEI_compute_init
   CALL init_env(U,X)
 
   !!! initialize all kinds of stuff for the kei_eco module
-  IF (lbio) CALL ecosys_init(hm,zmp)
+  IF (lbio) then
+    CALL ecosys_init(hm,zmp)
+    if (lsw) then
+      CALL sw_init()
+    endif
+  endif
 
   !!! Atmosphere init "load VAF"
   !!!     timed=startt + dtsec/spd * float(ndtflx)/2.   !!!startt
@@ -450,7 +505,7 @@ SUBROUTINE KEI_compute_init
 
   CALL mixedl(X(1,1),Tref,zml) ! X(:,1) ??
   Xprev = X(:,1:2)
-  dtday = dtsec / spd
+  dtday = dtsec / 86400.D0
   nt    = nstart
   !!! perform initial store/write
   !IF(lstore) THEN
@@ -474,7 +529,7 @@ END SUBROUTINE KEI_compute_init
 
 
 
-SUBROUTINE KEI_compute_step(nt_in)
+SUBROUTINE KEI_compute_step(nt_in,doy)
 
   !!! TIME INTEGRATION main loop: do 1000 nt= nstart, nend-ndtflx, ndtflx
   !WRITE(6,*)
@@ -482,6 +537,11 @@ SUBROUTINE KEI_compute_step(nt_in)
   !WRITE(6,*)     ' BEGIN  INTEGRATION LOOP'
   !WRITE(6,*)
   integer, intent(in) :: nt_in
+  double precision, intent(in) :: doy ! day-of-year, 1-1 Jan
+  double precision :: swh_out,mwp_out,cmag_out ! MACMODS expects doubles
+
+    ! transform salinity back to KPP version using sref
+    X(:,2) = X(:,2) - Sref
 
     nt = nt_in
 
@@ -555,7 +615,7 @@ SUBROUTINE KEI_compute_step(nt_in)
     DO 200 no = 1, ndtflx, ndtocn
          ntime = nt + no
          time = startt + dtday *  ntime
-         CALL ocnstep(U,X,kforce)
+         CALL ocnstep(U,X,kforce,absorp_out) ! make absorp_out work with KPP!
 
     200  CONTINUE
 
@@ -584,11 +644,27 @@ SUBROUTINE KEI_compute_step(nt_in)
 !       ENDIF
 
     !!! Accumulate biology fluxes
+      absorp_in = absorp_baseline
+      if (lsw .and. sw_i > 0) THEN
+            absorp_in(sw_i) = absorp_in(sw_i) + sw_absorp
+      endif
       IF(lbio) THEN
         !!!do estep=1,60
-          CALL ecosys_step(kforce,X,fice,albocn,Sref,dtsec,sflux(3,4,0),hmix,nt,startyear)
+          CALL ecosys_step(kforce,X,fice,albocn,Sref,dtsec,sflux(3,4,0),hmix,nt,startyear, &
+                           par_phyto,absorp_in,absorp_out)
         !!!enddo
-      ENDIF
+          if (lsw) THEN
+
+              ! kei_sw_step(U,X,doy,dtday,nt,par_phyto,swh_in,mwp_in,cmag_in)
+              swh_out = DBLE(kforce(swh_f_ind))
+              mwp_out = DBLE(kforce(mwp_f_ind))
+              cmag_out = DBLE(kforce(cmag_f_ind))
+              call kei_sw_step(U,X,doy,dtday,nt,par_phyto,swh_out,mwp_out,cmag_out)
+
+          endif
+
+
+        ENDIF
 
     !!! Store and/or Print ?
 !      IF( mod(ntime,inct).eq.0 ) THEN
@@ -634,6 +710,8 @@ SUBROUTINE KEI_compute_step(nt_in)
 !!!      CALL writerestart(U,X,aflx,atmtemp,atmshum,atmsave,atmsaveav, &
 !!!                       jptr,nt)
 !!!
+    ! transform salinity to total salinity for outputs, etc.
+    X(:,2) = X(:,2) + Sref
 
 END SUBROUTINE KEI_compute_step
 
@@ -740,19 +818,19 @@ END SUBROUTINE KEI_compute_step
     use kei_common
     use kei_icecommon
 
-		implicit none
+    implicit none
 
 		! inputs
     real :: U(NZP1,NVEL), X(NZP1,NSCLR)
     double precision :: HCice,FCice,SCice
 
 		! outputs
-		double precision :: HC(0:1),SC(0:1),HCocn,SCocn
-		real :: DHCdt,DSCdt
+    double precision :: HC(0:1),SC(0:1),HCocn,SCocn
+    real :: DHCdt,DSCdt
 
 		! local
-		integer :: n
-		real :: rhoCP,Szero,rhof,rhoocn,Sal,Saltice
+    integer :: n
+    real :: rhoCP,Szero,rhof,rhoocn,Sal,Saltice
 
 !                                 Ocean Heat Content
     HCocn = 0.0

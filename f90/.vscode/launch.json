@@ -1,0 +1,29 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Fortran Debug",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/kei_test_exe", // Path to your compiled executable
+        "args": [], // Command-line arguments for your program (if any)
+        "stopAtEntry": false, // Set to true to stop at the beginning of execution
+        "cwd": "${workspaceFolder}", // Current working directory for the program
+        "environment": [],
+        "externalConsole": false, // Set to true to run in an external terminal
+        "MIMode": "gdb",
+        "miDebuggerPath": "/usr/bin/gdb", // Path to your GDB executable (check your system)
+        "setupCommands": [
+          {
+            "description": "Enable pretty-printing for gdb",
+            "text": "-enable-pretty-printing",
+            "ignoreFailures": true
+          }
+        ],
+        "preLaunchTask": "build" // Task to build your Fortran code before debugging
+      }
+    ]
+}

@@ -349,7 +349,7 @@
     interface
      FUNCTION SWDK(z,ftime)
      implicit none
-     REAL :: z,ftime
+     REAL, intent(IN) :: z,ftime
      REAL :: SWDK
      end function SWDK
     end interface

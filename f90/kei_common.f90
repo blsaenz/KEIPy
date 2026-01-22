@@ -49,6 +49,7 @@
 		! proc switches
 		logical, save :: &
 			LKPP  , LRI, LDD, LICE, LBIO, LNBFLX, LTGRID, &
+      LSW, & ! seaweed switch
     	lsaveaverages, lstretchgrid, lrepeatdat, &
     	lradtq, lfluxSSTdat, &
     	lLWupSSTdat, lrhdat, lclddat, &
@@ -58,6 +59,10 @@
     ! proc pars
     integer, save :: &
     	jerlov
+
+    ! ecosys additions
+    double precision, save :: &
+      absorp_baseline           ! shortwave absorption to be added to ecosys absorption
 
     ! ocn inital cond
     integer, save :: &
@@ -83,8 +88,8 @@
     ! ocn energy
     real, save :: &
     	eflx,esnk,Tmke,Ptke,rmke(NZP1)
-   real, save :: &
-      qsw_absorped(NZ)
+    !real, save :: &  ! actually in kei_ocncommon? remove if we don't miss it
+    !  qsw_absorped(NZ)
     ! atm advec
     integer, save :: &
     	modatm
@@ -242,7 +247,7 @@
       nend      = 13140  ! number total time steps
       dtsec     = 3600.0 ! time step in seconds
       ndtatm    = 1      ! sub-dt atm steps
-      ndtice    = 1      ! sub-dt ice steps, likely not used b/s SIESTA
+      ndtice    = 1      ! sub-dt ice steps, likely not used b/c SIESTA does internal stepping
       ndtocn    = 1      ! sub-dt ocean/kpp steps
 
       LKPP      = .true.
@@ -250,11 +255,12 @@
       LDD       = .true.
       LICE      = .false.
       LBIO      = .true.
+      LSW       = .true.
       LTGRID    = .true.
       NZDIV     = 4
       LNBFLX    = .true.
 
-      DMAX      = 200.  ! dunno, hopefully get rid of me
+      !DMAX      = 200.  ! dunno, hopefully get rid of me
       dlon      = -66.0  ! degrees E
       dlat      = -63.0  ! degrees N
 
@@ -365,6 +371,9 @@
 
       f_wct = 0 ! default no data assimilation
       wct_interp = -999.
+
+      ! ecosys extras
+      absorp_baseline = 0.
 
       RETURN
     END SUBROUTINE init_constants_params

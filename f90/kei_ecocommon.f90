@@ -27,9 +27,9 @@ module kei_ecocommon
           km = NZ
      !equivalence (nz,km)
 
-			integer (kind=int_kind), parameter :: &
-				imt = 1,  &   ! x (longitudinal) dimension of ecosys variables
-				jmt = 1       ! y (latitudinal) dimension of ecosys variables
+      integer (kind=int_kind), parameter :: &
+        imt = 1,  &   ! x (longitudinal) dimension of ecosys variables
+        jmt = 1       ! y (latitudinal) dimension of ecosys variables
 
 !-----------------------------------------------------------------------
 !     tracer indices
@@ -143,7 +143,6 @@ module kei_ecocommon
 		real(kind=dbl_kind), dimension (ecosys_tracer_cnt) :: &
       ice_to_ocean_eflux
 
-
 		! restoring nutrient climatology switches
 		logical, parameter :: &
 			lrest_po4 = .false. , &        ! po4 climatological restoring switch
@@ -163,8 +162,6 @@ module kei_ecocommon
 			rest_time_inv_deep = 0.0_dbl_kind, &  ! 0 = instant, inverse ?
 			rest_z0            = 1000.0_dbl_kind, &  ! m
 			rest_z1            = 2000.0_dbl_kind     ! m
-
-
 
 
 end module kei_ecocommon

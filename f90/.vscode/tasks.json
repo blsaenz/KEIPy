@@ -1,0 +1,36 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "dependsOn" :[
+                "makeClean",
+                "make"
+            ],
+            "dependsOrder": "sequence",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "makeClean",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "-f",
+                "Makefile_test.mk",
+                "clean"
+            ]
+        },
+        {
+            "label": "make",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "-f",
+                "Makefile_test.mk",
+            ]
+        },
+    ]
+}

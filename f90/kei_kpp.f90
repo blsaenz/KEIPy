@@ -821,7 +821,7 @@
     real, save ::   difscon = 0.0000     ! max diff for convection  (m^2/s)
     real, save ::   c1 = 1.0
     real, save ::   c0 = 0.0
-    real, save ::   mRi = 2                ! number of vertical smoothing passes
+    integer, save ::   mRi = 2                ! number of vertical smoothing passes
 
     integer :: mr
     real :: ratio,fcon

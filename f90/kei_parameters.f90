@@ -5,7 +5,7 @@ MODULE kei_parameters
 
   PUBLIC
 
-  INTEGER, PARAMETER :: NZ = 400
+  INTEGER, PARAMETER :: NZ = 48
   INTEGER, PARAMETER :: NZM1 = NZ-1
   INTEGER, PARAMETER :: NZP1 = NZ+1
   INTEGER, PARAMETER :: NDIM = 1
@@ -16,6 +16,10 @@ MODULE kei_parameters
   INTEGER, PARAMETER :: NVP1 = NVEL+1
   INTEGER, PARAMETER :: NSP1 = NSCLR+1
   INTEGER, PARAMETER :: NSB = 1 ! NSCLR-2
+
+  INTEGER, PARAMETER :: n_sw_outputs = 36 ! This lives here, and in macmods, n_outputs = 36.  How to fix? could use an alloceable array for storage, probably should
+
+
   INTEGER, PARAMETER :: itermax = 15
   REAL, PARAMETER :: hmixtolfrac = 0.5
 
@@ -52,7 +56,7 @@ MODULE kei_parameters
 
   INTEGER, PARAMETER :: maxmodeadv = 6
 
-  INTEGER, PARAMETER :: forcing_var_cnt = 16
+  INTEGER, PARAMETER :: forcing_var_cnt = 19
 
   CHARACTER (len = 8), DIMENSION(forcing_var_cnt), &
     PARAMETER :: forcing_var_name = (/ &
@@ -71,7 +75,10 @@ MODULE kei_parameters
       'divu    ', &
       'ic      ', &
       'ain     ', &
-      'aout    ' /)
+      'aout    ', &
+      'swh     ', &
+      'mwp     ', &
+      'cmag    ' /)
 
   INTEGER, PARAMETER :: &
       date_f_ind = 1,     &  ! date forcing field
@@ -89,7 +96,10 @@ MODULE kei_parameters
       divu_f_ind = 13,    &  ! ice divergence forcing field
       ic_f_ind = 14,      &  ! ice concentration (fraction 0-1)
       ain_f_ind = 15,     &  ! ice advection in (fraction 0-1)
-      aout_f_ind = 16        ! ice advection out (fraction 0-1)
+      aout_f_ind = 16,    &  ! ice advection out (fraction 0-1)
+      swh_f_ind = 17,    &  ! swell height (seaweed module) (m)
+      mwp_f_ind = 18,    &  ! mean wave period (seaweed_module) (s)
+      cmag_f_ind = 19       ! horizonotal current magnitude (seaweed_module) (m/s)
 
 !   TYPE kei_forcing_type
 !     INTEGER :: &

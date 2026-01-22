@@ -341,7 +341,8 @@ CONTAINS
 
 !***********************************************************************
 
-      subroutine ecosys_step(kforce,X,fice,albocn,Sref,dt_sec,qsw_ice,hmix,nt,start_year)
+      subroutine ecosys_step(kforce,X,fice,albocn,Sref,dt_sec,qsw_ice,hmix,nt,start_year, &
+                             par_phyto,absorp_in,absorp_out)
 
         USE kei_hacks
 
@@ -377,7 +378,10 @@ CONTAINS
         integer(KIND=int_kind) :: i,j,k,tr_end
         real(kind=dbl_kind), dimension (ecosys_tracer_cnt) :: &
           eco_inject
-        real(KIND=dbl_kind) :: par_phyto(km) ! shortwave irradiance transmitted through ice
+        real(KIND=dbl_kind), intent(out) :: par_phyto(km) ! shortwave irradiance transmitted
+        real(KIND=dbl_kind), intent(in) :: absorp_in(km) ! external sources shortwave irradiance absorption (1/m)
+        real(KIND=dbl_kind), intent(out) :: absorp_out(km) ! total ecosystem shortwave irradiance absorption (1/m)
+
          real(KIND=dbl_kind) :: PAR_out,PAR_in,PAR_avg,dz_ml, KPARdz, dz1
          integer(KIND=int_kind) :: k_ml
 
@@ -452,11 +456,21 @@ CONTAINS
         do k=1,km
           PAR_in = PAR_out
           dz1 = dz_eco(k)/c100
-          if (PAR_in > 1.0e-6) then
-            KPARdz = (k_chl * (max(c0, X(k,2+diazChl_ind)) &
+
+          absorp_out(k) = absorp_in(k)/100._dbl_kind  ! 1/m -> 1/cm
+          absorp_out(k) = absorp_out(k) &
+                    + k_chl * (max(c0, X(k,2+diazChl_ind)) &
                     + max(c0, X(k,2+diatChl_ind)) &
                     + max(c0, X(k,2+spChl_ind))) &
-                    + k_h2o) * dz_eco(k)
+                    + k_h2o
+
+          if (PAR_in > 1.0e-6) then
+            !KPARdz = (k_chl * (max(c0, X(k,2+diazChl_ind)) &
+            !        + max(c0, X(k,2+diatChl_ind)) &
+            !        + max(c0, X(k,2+spChl_ind))) &
+            !        + k_h2o) * dz_eco(k)
+
+            KPARdz =  absorp_out(k) * dz_eco(k)
             PAR_out = PAR_in * exp(-KPARdz)
             par_phyto(k) = (PAR_out + PAR_in)/c2
           else
@@ -468,6 +482,9 @@ CONTAINS
               dz_ml = dz_ml + dz1
               k_ml = k
           endif
+
+          absorp_out(k) = absorp_in(k)/100._dbl_kind ! convert back to 1/m for output
+
         enddo
         if (k_ml > 1) then
           par_phyto(1:k_ml) = PAR_avg / dz_ml

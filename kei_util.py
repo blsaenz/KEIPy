@@ -35,61 +35,111 @@ from netCDF4 import date2num # use these with date2num(dt,'days since %i-01-01'%
 import xarray as xr
 import netCDF4
 
-# some fixed information regarding kei tracers and data
-ecosys_tracers = {'PO4':     {'units':'',  'idx':0},
-                  'NO3':     {'units':'',  'idx':1},
-                  'SiO3':    {'units':'',  'idx':2},
-                  'NH4':     {'units':'',  'idx':3},
-                  'Fe':      {'units':'',  'idx':4},
-                  'O2':      {'units':'',  'idx':5},
-                  'DIC':     {'units':'',  'idx':6},
-                  'ALK':     {'units':'',  'idx':7},
-                  'DOC':     {'units':'',  'idx':8},
-                  'spC':     {'units':'',  'idx':9},
-                  'spChl':   {'units':'',  'idx':10},
-                  'spCaCO3': {'units':'',  'idx':11},
-                  'diatC':   {'units':'',  'idx':12},
-                  'diatChl': {'units':'',  'idx':13},
-                  'zooC':    {'units':'',  'idx':14},
-                  'spFe':    {'units':'',  'idx':15},
-                  'diatSi':  {'units':'',  'idx':16},
-                  'diatFe':  {'units':'',  'idx':17},
-                  'diazC':   {'units':'',  'idx':18},
-                  'diazChl': {'units':'',  'idx':19},
-                  'diazFe':  {'units':'',  'idx':20},
-                  'DON':     {'units':'',  'idx':21},
-                  'DOFe':    {'units':'',  'idx':22},
-                  'DOP':     {'units':'',  'idx':23},
-                  }
 
-ma_tracers = {'maC':   {'units':'',  'idx':24},
-              'maChl': {'units':'',  'idx':25},
-              'maN':   {'units':'',  'idx':26},
-              'maP':   {'units':'',  'idx':27},
-              }
-
-# the order of forcing vars in a forcing array - the must be the same as in fortran code
-forcing_idx =  {'date': 0,
-                'tau_x': 1,
-                'tau_y': 2,
-                'qswins': 3,
-                'qlwdwn': 4,
-                'tz': 5,
-                'qz': 6,
-                'prain': 7,
-                'psnow': 8,
-                'msl': 9,
-                'h': 10,
-                'dustf': 11,
-                'divu': 12,
-                'ic': 13,
-                'ain': 14,
-                'aout': 15
-}
-grid_vars = ['dm','hm','zm','f_time'] # midpoint depth of cells, at least needed for xarray
-init_vars_ocn = ['t','s','u','v']
-init_vars_eco = list(ecosys_tracers.keys())
-forcing_vars = list(forcing_idx.keys())
+# remove below once this is working
+# output_var_data_meta = {
+#     'time':{'units':'days','long_name':'decimal days since start'},
+#     'hmx':{'units':'m','long_name':'KPP mixing depth'},
+#     'zml':{'units':'m','long_name':' gradient calc mixed layer thickness'},
+#     'atm_flux_to_ocn_surface':{'units':'W m-2','long_name':'energy flux from atm to ocean surface'},
+#     'wU':{'units':'m2 s-2','long_name':''},
+#     'wV':{'units':'m2 s-2','long_name':''},
+#     'wW':{'units':'m s-1','long_name':''},
+#     'wT':{'units':'celsius m s-1','long_name':''},
+#     'wS':{'units':'psu m s-1','long_name':''},
+#     'wB':{'units':'m s-1','long_name':''},
+#     'Tprev':{'units':'C','long_name':'water temperature, previous time step'},
+#     'Sprev':{'units':'psu','long_name':'salinty, previous time step'},
+#     'km':{'units':'m2 s-2','long_name':'momentum diffusivity coefficient'},
+#     'ks':{'units':'m2 s-1','long_name':'scalar diffusivity coefficient'},
+#     'kt':{'units':'m2 s-1','long_name':'temperature diffusivity coefficient'},
+#     'ghat':{'units':'','long_name':'gradient ghat'},
+#     'tot_prod':{'units':'mgC m-3','long_name':'total production'},
+#     'sp_Fe_lim':{'units':'fractional','long_name':'small phytoplankton Fe limtation term'},
+#     'sp_N_lim':{'units':'fractional','long_name':'small phytoplankton N limtation term'},
+#     'sp_P_lim':{'units':'fractional','long_name':'small phytoplankton P limtation term'},
+#     'sp_light_lim':{'units':'fractional','long_name':'small phytoplankton light limtation term'},
+#     'diat_Fe_lim':{'units':'fractional','long_name':'diatom phytoplankton Fe limtation term'},
+#     'diat_N_lim':{'units':'fractional','long_name':'diatom phytoplankton N limtation term'},
+#     'diat_P_lim':{'units':'fractional','long_name':'diatom phytoplankton P limtation term'},
+#     'diat_Si_lim':{'units':'fractional','long_name':'diatom phytoplankton Si limtation term'},
+#     'diat_light_lim':{'units':'fractional','long_name':'diatom phytoplankton light limtation term'},
+#     'graze_sp':{'units':'','long_name':'grazing of small phytos'},
+#     'graze_diat':{'units':'','long_name':'grazing of diatoms'},
+#     'graze_tot':{'units':'','long_name':'total grazing'},
+#     'hi':{'units':'m','long_name':'sea-ice thickness'},
+#     'hs':{'units':'m','long_name':'snow over sea-ice thickness'},
+#     'ni':{'units':'#','long_name':'number active ice layers'},
+#     'ns':{'units':'#','long_name':'number active snow laters'},
+#     'fice':{'units':'fractional','long_name':'fractional ice coverage'},
+#     'dzi':{'units':'m','long_name':'ice layer thicknesses'},
+#     'Ti':{'units':'C','long_name':'ice layer temperatures'},
+#     'Si':{'units':'psu','long_name':'ice layer salinities'},
+#     'dzs':{'units':'m','long_name':'snow layer thicknesses'},
+#     'Ts':{'units':'C','long_name':'snow/ice surface temperature'},
+#     'atm_flux_to_ice_surface':{'units':'W m-2','long_name':'energy flux from atmosphere to sea-ice surface'},
+#     'ice_ocean_bottom_flux':{'units':'W m-2','long_name':'energy flux to the sea-ice bottom from the PBL'},
+#     'ice_ocean_bottom_flux_potential':{'units':'W m-2','long_name':'ocean heat flux to ice potential'},
+#     'total_ice_melt':{'units':'J m-2','long_name':'total ice melted'},
+#     'total_ice_freeze':{'units':'J m-2','long_name':'total ice frozen'},
+#     'frazil_ice_volume':{'units':'m3 m-2','long_name':'total frazil ice production volume'},
+#     'congelation_ice_volume':{'units':'m3 m-2','long_name':'total congelation ice production volume'},
+#     'snow_ice_volume':{'units':'m3 m-2','long_name':'total snow ice production volume'},
+#     'snow_precip_mass':{'units':'kg m-2','long_name':'total snow fall over sea ice'},
+#     'fatm':{'units':'','long_name':''},
+#     'fao':{'units':'','long_name':''},
+#     'fai':{'units':'','long_name':''},
+#     'fio':{'units':'','long_name':''},
+#     'focn':{'units':'','long_name':''},
+#     'T':{'units':'C','long_name':'ocean later temperature'},
+#     'S':{'units':'psu','long_name':'ocean layer salinity'},
+#     'PO4':{'units':'mmol PO4 m-3','long_name':'ocean layer PO4 conentration'},
+#     'NO3':{'units':'mmol NO3 m-3','long_name':'ocean layer NO3 conentration'},
+#     'SiO3':{'units':'mmol SiO3 m-3','long_name':'ocean layer SiO3 conentration'},
+#     'NH4':{'units':'mmol NH4 m-3','long_name':'ocean layer NH4 conentration'},
+#     'Fe':{'units':'nmol Fe m-3','long_name':'ocean layer Fe conentration'},
+#     'O2':{'units':'nmol cm-3','long_name':'ocean layer O2 conentration'},
+#     'DIC':{'units':'mmol m-3','long_name':'ocean layer DIC conentration'},
+#     'ALK':{'units':'','long_name':'ocean layer Alkalinity'},
+#     'DOC':{'units':'mmol m-3','long_name':'ocean layer DOC conentration'},
+#     'spC':{'units':'mmol m-3','long_name':'small phytoplankton carbon'},
+#     'spChl':{'units':'mgChl m-3','long_name':'small phytoplankton Chlorophyll'},
+#     'spCaCO3':{'units':'mmol CaCO3 m-3','long_name':'small phytoplankton CaCO3'},
+#     'diatC':{'units':'','long_name':'diatom phytoplankton carbon'},
+#     'diatChl':{'units':'mgChl m-3','long_name':'diatom phytoplankton Chlorophyll'},
+#     'zooC':{'units':'','long_name':'heterotrophic zooplankton phytoplankton carbon'},
+#     'spFe':{'units':'nmol Fe m-3','long_name':'small phytoplankton Fe'},
+#     'diatSi':{'units':'','long_name':'diatom phytoplankton Si'},
+#     'diatFe':{'units':'nmol Fe m-3','long_name':'diatom phytoplankton Fe'},
+#     'diazC':{'units':'','long_name':'diazotroph phytoplankton carbon'},
+#     'diazChl':{'units':'mgChl m-3','long_name':'diazotroph phytoplankton Chlorophyll'},
+#     'diazFe':{'units':'nmol Fe m-3','long_name':'diazotroph phytoplankton Fe'},
+#     'DON':{'units':'mmol N m-3','long_name':'dissolved organic N'},
+#     'DOFe':{'units':'nmol Fe m-3','long_name':'dissolved organic Fe'},
+#     'DOP':{'units':'mmol P m-3','long_name':'dissolved organic P'},
+#     'hour':{'units':'fractional day','long_name':'this variable is poorly named'}, # TODO: rename me
+#     'date':{'units':'days','long_name':'days since simulation start'},
+#     'tau_x':{'units':'m s-2','long_name':'x-direction 10m wind speed'},  # should rename var; tau indicates stress...
+#     'tau_y':{'units':'m s-2','long_name':'y-direction 10m wind speed'},  # should rename var; tau indicates stress...
+#     'qswins':{'units':'W m-2','long_name':'surface downward shortwave irradiance'},
+#     'qlwdwn':{'units':'W m-2','long_name':'surface downward longwave irradiance'},
+#     'tz':{'units':'C','long_name':'2m [surface] air temperature'},
+#     'qz':{'units':'kg m-3','long_name':'2m [surface] humidity'},
+#     'prain':{'units':'kg m-2 s-1','long_name':'rain rate'},
+#     'psnow':{'units':'kg m-2 s-1','long_name':'snow rate'},
+#     'msl':{'units':'mbar','long_name':'mean sea level pressure'},
+#     'h':{'units':'kg/kg','long_name':'specific humdity'},
+#     'dustf':{'units':'g Fe m-2 s-2','long_name':'dust flux atmipshere to ocean surface - re-check units'},
+#     'divu':{'units':'fractional','long_name':'sea-ice coverage divergence'},
+#     'ic':{'units':'fractional','long_name':'fractional sea-ice coverage'},
+#     'ain':{'units':'fractional','long_name':'sea-ice coverage influx'},
+#     'aout':{'units':'fractional','long_name':'sea-ice coverage outflux'},
+#     'zm':{'units':'m','long_name':'layer midpoint depth [negative downward]'},
+#     'nni':{'units':'level','long_name':'sea-ice layers'},
+#     'nns':{'units':'level','long_name':'snow layers'},
+#     'nflx':{'units':'#','long_name':'KEI flux structure count'},
+#
+# }
 
 ice_dim = 'nni'
 snow_dim = 'nns'
@@ -97,218 +147,206 @@ nz_dim = 'zm'
 t_dim = 'f_time'
 flx_dim = 'nflx'
 
-ocn_output_vars = { # single dimension output vars
-               'time': {'units':'day from time_start',
-                        'dim':None},
-               'hmx': {'units':'m',
-                       'dim':None},
-               'zml': {'units':'m',
-                       'dim':None},
-               'atm_flux_to_ocn_surface': {'units': 'W/m^2',
-                       'dim': None},
-                # nz-dimension vars
-               'wU': {'units':'m',
-                       'dim':nz_dim},
-               'wV': {'units':'m',
-                       'dim':nz_dim},
-               'wW': {'units':'m',
-                       'dim':nz_dim},
-               'wT': {'units':'m',
-                       'dim':nz_dim},
-               'wS': {'units':'m',
-                       'dim':nz_dim},
-               'wB': {'units':'m',
-                       'dim':nz_dim},
-               'Tprev': {'units':'C',
-                       'dim':nz_dim},
-               'Sprev': {'units':'psu',
-                       'dim':nz_dim},
-               'km': {'units':'',
-                       'dim':nz_dim},
-               'ks': {'units':'',
-                       'dim':nz_dim},
-               'kt': {'units':'',
-                       'dim':nz_dim},
-               'ghat': {'units':'',
-                       'dim':nz_dim},
-              }
 
-eco_output_vars = {
-    'tot_prod': {'units': '',
-                 'dim': nz_dim},
-    'sp_Fe_lim': {'units': '',
-                  'dim': nz_dim},
-    'sp_N_lim': {'units': '',
-                 'dim': nz_dim},
-    'sp_P_lim': {'units': '',
-                 'dim': nz_dim},
-    'sp_light_lim': {'units': '',
-                     'dim': nz_dim},
-    'diat_Fe_lim': {'units': '',
-                    'dim': nz_dim},
-    'diat_N_lim': {'units': '',
-                   'dim': nz_dim},
-    'diat_P_lim': {'units': '',
-                   'dim': nz_dim},
-    'diat_Si_lim': {'units': '',
-                    'dim': nz_dim},
-    'diat_light_lim': {'units': '',
-                       'dim': nz_dim},
-    'graze_sp': {'units': '',
-                 'dim': nz_dim},
-    'graze_diat': {'units': '',
-                   'dim': nz_dim},
-    'graze_tot': {'units': '',
-                  'dim': nz_dim},
+grid_output_meta = {
+    'zm':{'units':'m','long_name':'layer midpoint depth [negative downward]'},
+    'nni':{'units':'level','long_name':'sea-ice layers'},
+    'nns':{'units':'level','long_name':'snow layers'},
+    'nflx':{'units':'#','long_name':'KEI flux structure count'},
 }
 
-ice_output_vars = {
-    'hi': {'units': 'm',
-            'dim': None},
-    'hs': {'units': 'm',
-            'dim': None},
-    'ni': {'units': 'valid levels',
-           'dim': 'int'},
-    'ns': {'units': 'valid levels',
-           'dim': 'int'},
-    'fice': {'units': 'fraction',
-            'dim': None},
-    'dzi': {'units': 'm',
-           'dim': ice_dim},
-    'Ti': {'units': 'C',
-           'dim': ice_dim},
-    'Si': {'units': 'psu',
-           'dim': ice_dim},
-    'dzs': {'units': 'm',
-           'dim': snow_dim},
-    'Ts': {'units': 'C',
-           'dim': snow_dim},
-    'atm_flux_to_ice_surface': {'units': 'W/m^2',
-           'dim': None},
-    'ice_ocean_bottom_flux': {'units': 'W/m^2',
-           'dim': None},
-    'ice_ocean_bottom_flux_potential': {'units': 'W/m^2',
-           'dim': None},
-    'total_ice_melt': {'units': 'J/m^2',
-           'dim': None},
-    'total_ice_freeze': {'units': 'J/m^2',
-           'dim': None},
-    'frazil_ice_volume': {'units': 'm^3/m^2',
-           'dim': None},
-    'congelation_ice_volume': {'units': 'm^3/m^2',
-           'dim': None},
-    'snow_ice_volume': {'units': 'm^3/m^2',
-           'dim': None},
-    'snow_precip_mass': {'units': 'kg/m^2',
-           'dim': None},
-
-}
-
-output_var_data = {**ocn_output_vars, **eco_output_vars, **ice_output_vars}
-
-
-output_var_data_meta = {
-    'time':{'units':'days','long_name':'decimal days since start'},
-    'hmx':{'units':'m','long_name':'KPP mixing depth'},
-    'zml':{'units':'m','long_name':' gradient calc mixed layer thickness'},
-    'atm_flux_to_ocn_surface':{'units':'W m-2','long_name':'energy flux from atm to ocean surface'},
-    'wU':{'units':'m2 s-2','long_name':''},
-    'wV':{'units':'m2 s-2','long_name':''},
-    'wW':{'units':'m s-1','long_name':''},
-    'wT':{'units':'celsius m s-1','long_name':''},
-    'wS':{'units':'psu m s-1','long_name':''},
-    'wB':{'units':'m s-1','long_name':''},
-    'Tprev':{'units':'C','long_name':'water temperature, previous time step'},
-    'Sprev':{'units':'psu','long_name':'salinty, previous time step'},
-    'km':{'units':'m2 s-2','long_name':'momentum diffusivity coefficient'},
-    'ks':{'units':'m2 s-1','long_name':'scalar diffusivity coefficient'},
-    'kt':{'units':'m2 s-1','long_name':'temperature diffusivity coefficient'},
-    'ghat':{'units':'','long_name':'gradient ghat'},
-    'tot_prod':{'units':'mgC m-3','long_name':'total production'},
-    'sp_Fe_lim':{'units':'fractional','long_name':'small phytoplankton Fe limtation term'},
-    'sp_N_lim':{'units':'fractional','long_name':'small phytoplankton N limtation term'},
-    'sp_P_lim':{'units':'fractional','long_name':'small phytoplankton P limtation term'},
-    'sp_light_lim':{'units':'fractional','long_name':'small phytoplankton light limtation term'},
-    'diat_Fe_lim':{'units':'fractional','long_name':'diatom phytoplankton Fe limtation term'},
-    'diat_N_lim':{'units':'fractional','long_name':'diatom phytoplankton N limtation term'},
-    'diat_P_lim':{'units':'fractional','long_name':'diatom phytoplankton P limtation term'},
-    'diat_Si_lim':{'units':'fractional','long_name':'diatom phytoplankton Si limtation term'},
-    'diat_light_lim':{'units':'fractional','long_name':'diatom phytoplankton light limtation term'},
-    'graze_sp':{'units':'','long_name':'grazing of small phytos'},
-    'graze_diat':{'units':'','long_name':'grazing of diatoms'},
-    'graze_tot':{'units':'','long_name':'total grazing'},
-    'hi':{'units':'m','long_name':'sea-ice thickness'},
-    'hs':{'units':'m','long_name':'snow over sea-ice thickness'},
-    'ni':{'units':'#','long_name':'number active ice layers'},
-    'ns':{'units':'#','long_name':'number active snow laters'},
-    'fice':{'units':'fractional','long_name':'fractional ice coverage'},
-    'dzi':{'units':'m','long_name':'ice layer thicknesses'},
-    'Ti':{'units':'C','long_name':'ice layer temperatures'},
-    'Si':{'units':'psu','long_name':'ice layer salinities'},
-    'dzs':{'units':'m','long_name':'snow layer thicknesses'},
-    'Ts':{'units':'C','long_name':'snow/ice surface temperature'},
-    'atm_flux_to_ice_surface':{'units':'W m-2','long_name':'energy flux from atmosphere to sea-ice surface'},
-    'ice_ocean_bottom_flux':{'units':'W m-2','long_name':'energy flux to the sea-ice bottom from the PBL'},
-    'ice_ocean_bottom_flux_potential':{'units':'W m-2','long_name':'ocean heat flux to ice potential'},
-    'total_ice_melt':{'units':'J m-2','long_name':'total ice melted'},
-    'total_ice_freeze':{'units':'J m-2','long_name':'total ice frozen'},
-    'frazil_ice_volume':{'units':'m3 m-2','long_name':'total frazil ice production volume'},
-    'congelation_ice_volume':{'units':'m3 m-2','long_name':'total congelation ice production volume'},
-    'snow_ice_volume':{'units':'m3 m-2','long_name':'total snow ice production volume'},
-    'snow_precip_mass':{'units':'kg m-2','long_name':'total snow fall over sea ice'},
+flx_output_meta = {
     'fatm':{'units':'','long_name':''},
     'fao':{'units':'','long_name':''},
     'fai':{'units':'','long_name':''},
     'fio':{'units':'','long_name':''},
     'focn':{'units':'','long_name':''},
-    'T':{'units':'C','long_name':'ocean later temperature'},
-    'S':{'units':'psu','long_name':'ocean layer salinity'},
-    'PO4':{'units':'mmol PO4 m-3','long_name':'ocean layer PO4 conentration'},
-    'NO3':{'units':'mmol NO3 m-3','long_name':'ocean layer NO3 conentration'},
-    'SiO3':{'units':'mmol SiO3 m-3','long_name':'ocean layer SiO3 conentration'},
-    'NH4':{'units':'mmol NH4 m-3','long_name':'ocean layer NH4 conentration'},
-    'Fe':{'units':'nmol Fe m-3','long_name':'ocean layer Fe conentration'},
-    'O2':{'units':'nmol cm-3','long_name':'ocean layer O2 conentration'},
-    'DIC':{'units':'mmol m-3','long_name':'ocean layer DIC conentration'},
-    'ALK':{'units':'','long_name':'ocean layer Alkalinity'},
-    'DOC':{'units':'mmol m-3','long_name':'ocean layer DOC conentration'},
-    'spC':{'units':'mmol m-3','long_name':'small phytoplankton carbon'},
-    'spChl':{'units':'mgChl m-3','long_name':'small phytoplankton Chloropyll'},
-    'spCaCO3':{'units':'mmol CaCO3 m-3','long_name':'small phytoplankton CaCO3'},
-    'diatC':{'units':'','long_name':'diatom phytoplankton carbon'},
-    'diatChl':{'units':'mgChl m-3','long_name':'diatom phytoplankton Chloropyll'},
-    'zooC':{'units':'','long_name':'heterotrophic zooplankton phytoplankton carbon'},
-    'spFe':{'units':'nmol Fe m-3','long_name':'small phytoplankton Fe'},
-    'diatSi':{'units':'','long_name':'diatom phytoplankton Si'},
-    'diatFe':{'units':'nmol Fe m-3','long_name':'diatom phytoplankton Fe'},
-    'diazC':{'units':'','long_name':'diazotroph phytoplankton carbon'},
-    'diazChl':{'units':'mgChl m-3','long_name':'diazotroph phytoplankton Chloropyll'},
-    'diazFe':{'units':'nmol Fe m-3','long_name':'diazotroph phytoplankton Fe'},
-    'DON':{'units':'mmol N m-3','long_name':'dissolved organic N'},
-    'DOFe':{'units':'nmol Fe m-3','long_name':'dissolved organic Fe'},
-    'DOP':{'units':'mmol P m-3','long_name':'dissolved organic P'},
-    'hour':{'units':'fractional day','long_name':'this variable is poorly named'}, # TODO: rename me
-    'date':{'units':'days','long_name':'days since simulation start'},
-    'tau_x':{'units':'m s-2','long_name':'x-direction 10m wind speed'},  # should rename var; tau indicates stress...
-    'tau_y':{'units':'m s-2','long_name':'y-direction 10m wind speed'},  # should rename var; tau indicates stress...
-    'qswins':{'units':'W m-2','long_name':'surface downward shortwave irradiance'},
-    'qlwdwn':{'units':'W m-2','long_name':'surface downward longwave irradiance'},
-    'tz':{'units':'C','long_name':'2m [surface] air temperature'},
-    'qz':{'units':'kg m-3','long_name':'2m [surface] humidity'},
-    'prain':{'units':'kg m-2 s-1','long_name':'rain rate'},
-    'psnow':{'units':'kg m-2 s-1','long_name':'snow rate'},
-    'msl':{'units':'mbar','long_name':'mean sea level pressure'},
-    'h':{'units':'kg/kg','long_name':'specific humdity'},
-    'dustf':{'units':'g Fe m-2 s-2','long_name':'dust flux atmipshere to ocean surface - re-check units'},
-    'divu':{'units':'fractional','long_name':'sea-ice coverage divergence'},
-    'ic':{'units':'fractional','long_name':'fractional sea-ice coverage'},
-    'ain':{'units':'fractional','long_name':'sea-ice coverage influx'},
-    'aout':{'units':'fractional','long_name':'sea-ice coverage outflux'},
-    'zm':{'units':'m','long_name':'layer midpoint depth [negative downward]'},
-    'nni':{'units':'level','long_name':'sea-ice layers'},
-    'nns':{'units':'level','long_name':'snow layers'},
-    'nflx':{'units':'#','long_name':'KEI flux structure count'},
+}
+
+ocn_output_meta_block = {
+    'T':{'idx':0,'units':'C','long_name':'ocean layer temperature'},
+    'S':{'idx':1,'units':'psu','long_name':'ocean layer salinity'},
+}
+
+# some fixed information regarding kei tracers and data
+ecosys_output_meta_block = {
+    'PO4': {'idx': 0, 'units': 'mmol PO4 m-3', 'long_name': 'ocean layer PO4 conentration','dim': None},
+    'NO3': {'idx': 1, 'units': 'mmol NO3 m-3', 'long_name': 'ocean layer NO3 conentration','dim': None},
+    'SiO3': {'idx': 2, 'units': 'mmol SiO3 m-3', 'long_name': 'ocean layer SiO3 conentration','dim': None},
+    'NH4': {'idx': 3, 'units': 'mmol NH4 m-3', 'long_name': 'ocean layer NH4 conentration','dim': None},
+    'Fe': {'idx': 4, 'units': 'nmol Fe m-3', 'long_name': 'ocean layer Fe conentration','dim': None},
+    'O2': {'idx': 5, 'units': 'nmol cm-3', 'long_name': 'ocean layer O2 conentration','dim': None},
+    'DIC': {'idx': 6, 'units': 'mmol m-3', 'long_name': 'ocean layer DIC conentration','dim': None},
+    'ALK': {'idx': 7, 'units': '', 'long_name': 'ocean layer Alkalinity','dim': None},
+    'DOC': {'idx': 8, 'units': 'mmol m-3', 'long_name': 'ocean layer DOC conentration','dim': None},
+    'spC': {'idx': 9, 'units': 'mmol m-3', 'long_name': 'small phytoplankton carbon','dim': None},
+    'spChl': {'idx': 10, 'units': 'mgChl m-3', 'long_name': 'small phytoplankton Chlorophyll','dim': None},
+    'spCaCO3': {'idx': 11, 'units': 'mmol CaCO3 m-3', 'long_name': 'small phytoplankton CaCO3','dim': None},
+    'diatC': {'idx': 12, 'units': '', 'long_name': 'diatom phytoplankton carbon','dim': None},
+    'diatChl': {'idx': 13, 'units': 'mgChl m-3', 'long_name': 'diatom phytoplankton Chlorophyll','dim': None},
+    'zooC': {'idx': 14, 'units': '', 'long_name': 'heterotrophic zooplankton phytoplankton carbon','dim': None},
+    'spFe': {'idx': 15, 'units': 'nmol Fe m-3', 'long_name': 'small phytoplankton Fe','dim': None},
+    'diatSi': {'idx': 16, 'units': '', 'long_name': 'diatom phytoplankton Si','dim': None},
+    'diatFe': {'idx': 17, 'units': 'nmol Fe m-3', 'long_name': 'diatom phytoplankton Fe','dim': None},
+    'diazC': {'idx': 18, 'units': '', 'long_name': 'diazotroph phytoplankton carbon','dim': None},
+    'diazChl': {'idx': 19, 'units': 'mgChl m-3', 'long_name': 'diazotroph phytoplankton Chlorophyll','dim': None},
+    'diazFe': {'idx': 20, 'units': 'nmol Fe m-3', 'long_name': 'diazotroph phytoplankton Fe','dim': None},
+    'DON': {'idx': 21, 'units': 'mmol N m-3', 'long_name': 'dissolved organic N','dim': None},
+    'DOFe': {'idx': 22, 'units': 'nmol Fe m-3', 'long_name': 'dissolved organic Fe','dim': None},
+    'DOP': {'idx': 23, 'units': 'mmol P m-3', 'long_name': 'dissolved organic P','dim': None}
+}
+
+
+
+# the order of forcing vars in a forcing array - the must be the same as in fortran code
+forcing_output_meta_block =  {
+    'date': {'idx': 0, 'units': 'days', 'long_name': 'days since simulation start','dim': None},
+    'tau_x': {'idx': 1, 'units': 'm s-2', 'long_name': 'x-direction 10m wind speed','dim': None},
+    'tau_y': {'idx': 2, 'units': 'm s-2', 'long_name': 'y-direction 10m wind speed','dim': None},
+    'qswins': {'idx': 3, 'units': 'W m-2', 'long_name': 'surface downward shortwave irradiance','dim': None},
+    'qlwdwn': {'idx': 4, 'units': 'W m-2', 'long_name': 'surface downward longwave irradiance','dim': None},
+    'tz': {'idx': 5, 'units': 'C', 'long_name': '2m [surface] air temperature','dim': None},
+    'qz': {'idx': 6, 'units': 'kg m-3', 'long_name': '2m [surface] humidity','dim': None},
+    'prain': {'idx': 7, 'units': 'kg m-2 s-1', 'long_name': 'rain rate','dim': None},
+    'psnow': {'idx': 8, 'units': 'kg m-2 s-1', 'long_name': 'snow rate','dim': None},
+    'msl': {'idx': 9, 'units': 'mbar', 'long_name': 'mean sea level pressure','dim': None},
+    'h': {'idx': 10, 'units': 'kg/kg', 'long_name': 'specific humdity','dim': None},
+    'dustf': {'idx': 11, 'units': 'g Fe m-2 s-2', 'long_name': 'dust flux atmipshere to ocean surface - re-check units','dim': None},
+    'divu': {'idx': 12, 'units': 'fractional', 'long_name': 'sea-ice coverage divergence','dim': None},
+    'ic': {'idx': 13, 'units': 'fractional', 'long_name': 'fractional sea-ice coverage','dim': None},
+    'ain': {'idx': 14, 'units': 'fractional', 'long_name': 'sea-ice coverage influx','dim': None},
+    'aout': {'idx': 15, 'units': 'fractional', 'long_name': 'sea-ice coverage outflux','dim': None},
+    'swh': {'idx': 16, 'units': 'm', 'long_name': 'swell height','dim': None},
+    'mwp': {'idx': 17, 'units': 's', 'long_name': 'mean wave period','dim': None},
+    'cmag': {'idx': 18, 'units': 'm s-1', 'long_name': 'current magnitude (speed)','dim': None}
+}
+
+ocn_output_meta = {
+    'time': {'dim': None, 'units': 'days', 'long_name': 'decimal days since start'},
+    'hmx': {'dim': None, 'units': 'm', 'long_name': 'KPP mixing depth'},
+    'zml': {'dim': None, 'units': 'm', 'long_name': ' gradient calc mixed layer thickness'},
+    'atm_flux_to_ocn_surface': {'dim': None, 'units': 'W m-2', 'long_name': 'energy flux from atm to ocean surface'},
+    'wU': {'dim': nz_dim, 'units': 'm2 s-2', 'long_name': ''},
+    'wV': {'dim': nz_dim, 'units': 'm2 s-2', 'long_name': ''},
+    'wW': {'dim': nz_dim, 'units': 'm s-1', 'long_name': ''},
+    'wT': {'dim': nz_dim, 'units': 'celsius m s-1', 'long_name': ''},
+    'wS': {'dim': nz_dim, 'units': 'psu m s-1', 'long_name': ''},
+    'wB': {'dim': nz_dim, 'units': 'm s-1', 'long_name': ''},
+    'Tprev': {'dim': nz_dim, 'units': 'C', 'long_name': 'water temperature, previous time step'},
+    'Sprev': {'dim': nz_dim, 'units': 'psu', 'long_name': 'salinty, previous time step'},
+    'km': {'dim': nz_dim, 'units': 'm2 s-2', 'long_name': 'momentum diffusivity coefficient'},
+    'ks': {'dim': nz_dim, 'units': 'm2 s-1', 'long_name': 'scalar diffusivity coefficient'},
+    'kt': {'dim': nz_dim, 'units': 'm2 s-1', 'long_name': 'temperature diffusivity coefficient'},
+    'ghat': {'dim': nz_dim, 'units': '', 'long_name': 'gradient ghat'}
+}
+
+ecosys_output_meta = {
+    'par': {'units': 'W', 'dim': nz_dim, 'long_name': 'incident layer PAR (ecosystem-calculated)'},
+    'tot_prod': {'units': 'mgC m-3', 'dim': nz_dim, 'long_name': 'total production'},
+    'sp_Fe_lim': {'units': 'fractional', 'dim': nz_dim, 'long_name': 'small phytoplankton Fe limtation term'},
+    'sp_N_lim': {'units': 'fractional', 'dim': nz_dim, 'long_name': 'small phytoplankton N limtation term'},
+    'sp_P_lim': {'units': 'fractional', 'dim': nz_dim, 'long_name': 'small phytoplankton P limtation term'},
+    'sp_light_lim': {'units': 'fractional', 'dim': nz_dim, 'long_name': 'small phytoplankton light limtation term'},
+    'diat_Fe_lim': {'units': 'fractional', 'dim': nz_dim, 'long_name': 'diatom phytoplankton Fe limtation term'},
+    'diat_N_lim': {'units': 'fractional', 'dim': nz_dim, 'long_name': 'diatom phytoplankton N limtation term'},
+    'diat_P_lim': {'units': 'fractional', 'dim': nz_dim, 'long_name': 'diatom phytoplankton P limtation term'},
+    'diat_Si_lim': {'units': 'fractional', 'dim': nz_dim, 'long_name': 'diatom phytoplankton Si limtation term'},
+    'diat_light_lim': {'units': 'fractional', 'dim': nz_dim, 'long_name': 'diatom phytoplankton light limtation term'},
+    'graze_sp': {'units': '', 'dim': nz_dim, 'long_name': 'grazing of small phytos'},
+    'graze_diat': {'units': '', 'dim': nz_dim, 'long_name': 'grazing of diatoms'},
+    'graze_tot': {'units': '', 'dim': nz_dim, 'long_name': 'total grazing'},
+}
+
+
+ice_output_meta = {
+    'hi': {'units': 'm', 'dim': None, 'long_name': 'sea-ice thickness'},
+    'hs': {'units': 'm', 'dim': None, 'long_name': 'snow over sea-ice thickness'},
+    'ni': {'units': 'valid levels', 'dim': 'int', 'long_name': 'number active ice layers'},
+    'ns': {'units': 'valid levels', 'dim': 'int', 'long_name': 'number active snow laters'},
+    'fice': {'units': 'fractional', 'dim': None, 'long_name': 'fractional sea-ice coverage'},
+    'dzi': {'units': 'm', 'dim':ice_dim, 'long_name': 'ice layer thicknesses'},
+    'Ti': {'units': 'C', 'dim':ice_dim, 'long_name': 'ice layer temperatures'},
+    'Si': {'units': 'psu', 'dim':ice_dim, 'long_name': 'ice layer salinities'},
+    'dzs': {'units': 'm', 'dim': snow_dim, 'long_name': 'snow layer thicknesses'},
+    'Ts': {'units': 'C', 'dim': snow_dim, 'long_name': 'snow/ice surface temperature'},
+    'atm_flux_to_ice_surface': {'units': 'W/m^2', 'dim': None, 'long_name': 'energy flux from atmosphere to sea-ice surface'},
+    'ice_ocean_bottom_flux': {'units': 'W/m^2', 'dim': None, 'long_name': 'energy flux to the sea-ice bottom from the PBL'},
+    'ice_ocean_bottom_flux_potential': {'units': 'W/m^2', 'dim': None, 'long_name': 'ocean heat flux to ice potential'},
+    'total_ice_melt': {'units': 'J/m^2', 'dim': None, 'long_name': 'total ice melted'},
+    'total_ice_freeze': {'units': 'J/m^2', 'dim': None, 'long_name': 'total ice frozen'},
+    'frazil_ice_volume': {'units': 'm^3/m^2', 'dim': None, 'long_name': 'total frazil ice production volume'},
+    'congelation_ice_volume': {'units': 'm^3/m^2', 'dim': None, 'long_name': 'total congelation ice production volume'},
+    'snow_ice_volume': {'units': 'm^3/m^2', 'dim': None, 'long_name': 'total snow ice production volume'},
+    'snow_precip_mass': {'units': 'kg/m^2', 'dim': None, 'long_name': 'total snow fall over sea ice'}
+}
+
+# from macmods_param_mod
+sw_output_meta_block = {
+
+    'sw_B':         {'idx':0, 'dim': None, 'units':'g/m2','long_name':'macroalgae biomass dry weight'},
+    'sw_QN':        {'idx':1, 'dim': None, 'units':'mg N/g B','long_name':'nitrogen quotient'},
+    'sw_QP':        {'idx':2, 'dim': None, 'units':'mg P/g B','long_name':'phosphorus quotient'},
+    'sw_QFe':       {'idx':3, 'dim': None, 'units':'mg Fe/g B','long_name':'iron quotient'},
+    'sw_Gave':      {'idx':4, 'dim': None, 'units':'1/day','long_name':'average growth rate, sort of dynamic and used for harvest or senescence calcs'},
+    'sw_Dave':      {'idx':5, 'dim': None, 'units':'1/day','long_name':'average death rate, sort of dynamic and used for harvest or senescence calcs'},
+    'sw_t_harv':    {'idx':6, 'dim': None, 'units':'#','long_name':'number of harvests since seeding'},
+
+    'sw_Growth':    {'idx':7, 'dim': None, 'units':'g/m2','long_name':'macroalgae biomass dry weight, currently fixed biomass:C ratio'},
+    'sw_n_harv':    {'idx':8, 'dim': None, 'units':'#','long_name':'number of harvests since last output/write'},
+    'sw_harv':      {'idx':9, 'dim': None, 'units':'g/m2','long_name':'harvest biomass, cumulative since last write'},
+    'sw_d_Be':      {'idx':10, 'dim': None, 'units':'mg N/m2','long_name':'nitrogen lost to exudation, cumulative since last write'},
+    'sw_d_Bm':      {'idx':11, 'dim': None, 'units':'g/m2','long_name':'biomass that died dry weight, cumulative since last write'},
+    'sw_d_Bm_wave': {'idx':12, 'dim': None, 'units':'g/m2','long_name':'biomass that broke off dry weight, part of d_Bm, cumulative since last write'},
+    'sw_d_B':       {'idx':13, 'dim': None, 'units':'g/m2','long_name':'change in B dry weight, instantaneous for subtimestep'},
+    'sw_d_QN':      {'idx':14, 'dim': None, 'units':'mg N/g B','long_name':'change in nitrogen quotient, instantaneous for subtimestep'},
+    'sw_d_NO3':     {'idx':15, 'dim': None, 'units':'mmol/m2','long_name':'seaweed update of NO3, cumulative since last write'},
+    'sw_d_NH4':     {'idx':16, 'dim': None, 'units':'mmol/m2','long_name':'seaweed update of NH4, cumulative since last write'},
+    'sw_d_PO4':     {'idx':17, 'dim': None, 'units':'mmol/m2','long_name':'seaweed update of PO4, cumulative since last write'},
+    'sw_d_Fe':      {'idx':18, 'dim': None, 'units':'mmol/m2','long_name':'seaweed update of Fe, cumulative since last write'},
+    'sw_d_DIC':     {'idx':29, 'dim': None, 'units':'mmol/m2','long_name':'seaweed update of DIC [mmol/m2], cumulative since last write'},
+    'sw_d_O2':      {'idx':20, 'dim': None, 'units':'mmol/m2','long_name':'seaweed update of dissolved O2, cumulative since last write'},
+    'sw_d_DOC':     {'idx':21, 'dim': None, 'units':'mmol/m2','long_name':'seaweed contribution to DOC pool'},
+    'sw_d_DON':     {'idx':22, 'dim': None, 'units':'mmol/m2','long_name':'seaweed contribution to DON pool'},
+    'sw_d_DOP':     {'idx':23, 'dim': None, 'units':'mmol/m2','long_name':'seaweed contribution to DOP pool'},
+    'sw_d_DOFe':    {'idx':24, 'dim': None, 'units':'mmol/m2','long_name':'seaweed contribution to DOFe pool'},
+    'sw_d_POC':     {'idx':25, 'dim': None, 'units':'mmol/m2','long_name':'seaweed contribution to POC pool'},
+    'sw_d_PON':     {'idx':26, 'dim': None, 'units':'mmol/m2','long_name':'seaweed contribution to PON pool'},
+    'sw_d_POP':     {'idx':27, 'dim': None, 'units':'mmol/m2','long_name':'seaweed contribution to POP pool'},
+    'sw_d_POFe':    {'idx':28, 'dim': None, 'units':'mmol Fe/m2','long_name':'seaweed contribution to DOFe pool'},
+    'sw_Grate':     {'idx':29, 'dim': None, 'units':'1/day','long_name':'average growth rate, sort of dynamic and used for harvest or senescence calcs'},
+    'sw_B_N':       {'idx':30, 'dim': None, 'units':'?','long_name':'cant remember what this is'},
+    'sw_gQ':        {'idx':31, 'dim': None, 'units':'fractional','long_name':'nutrient limitation term'},
+    'sw_gT':        {'idx':32, 'dim': None, 'units':'fractional','long_name':'temperature limitation'},
+    'sw_gE':        {'idx':33, 'dim': None, 'units':'fractional','long_name':'light limitation '},
+    'sw_gH':        {'idx':34, 'dim': None, 'units':'fractional','long_name':'crowding limitation'},
+    'sw_min_lim':   {'idx':35, 'dim': None, 'units':'factional','long_name':'minimum limitation term on growth'},
+
  }
+
+sw_output_meta = {
+    'sw_sst':       {'dim':None, 'units':'C','long_name':'seaweed water temperature'},
+    'sw_chl':       {'dim':None, 'units':'mg/m3','long_name':'chl-a concentration above the seaweed'},
+    'sw_par':       {'dim':None, 'units':'W','long_name':'seaweed ambient PAR'},
+    'sw_no3':       {'dim':None, 'units':'mmol/m3','long_name':'seaweed ambient NO3 concentration'},
+    'sw_nh4':       {'dim':None, 'units':'mmol/m3','long_name':'seaweed ambient NH4 concentration'},
+    'sw_po4':       {'dim':None, 'units':'mmol/m3','long_name':'seaweed ambient PO4 concentration'},
+    'sw_fe':        {'dim':None, 'units':'mmol/m3','long_name':'seaweed ambient Fe concentration'},
+    'sw_i':         {'dim':None, 'units':'index','long_name':'index of seaweed location in 1D grid'},
+    'sw_abosrp':    {'dim':None, 'units':'1/m','long_name':'shortwave/PAR absorbance due to seaweed'}
+}
+
+output_meta = {
+    **forcing_output_meta_block, **ocn_output_meta, **ecosys_output_meta_block,
+    **ecosys_output_meta, **ice_output_meta, **sw_output_meta_block, **sw_output_meta,
+    **grid_output_meta, **flx_output_meta, **ocn_output_meta_block
+}
+
+
+forcing_idx = {k:v['idx'] for k,v in forcing_output_meta_block.items()} # this is used somewhere I think
+grid_vars = ['dm','hm','zm','f_time'] # midpoint depth of cells, at least needed for xarray
+init_vars_ocn = ['t','s','u','v']
+init_vars_eco = list(ecosys_output_meta_block.keys())
+forcing_vars = list(forcing_output_meta_block.keys())
 
 
 @jit(nopython=True)
@@ -519,6 +557,44 @@ def compile_ERA5_met():
     # specific_humidity_from_dewpoint(988 * units.hPa, 15 * units.degC).to('g/kg')
 
 
+def specific_from_relative_humidity( at, rh, pr ):
+    '''find specific humidity the ECMWF way!
+    tz in deg C
+    rh in fractional
+    pr in mb
+    hum in kg/kg
+    qz in kg/m^3
+    '''
+
+    # some constants
+    Rair = 287.058 # J/kg/K
+    Rvap = 461.495  # J/kg/K
+    r_o_r = Rair/Rvap
+    Tice = 250.16
+
+    at = at+273.15
+    alpha = np.ones(len(at))
+    for i,at1 in enumerate(at):
+        if at1 <= Tice:
+            alpha[i] = 0.0
+        elif at1 < 273.16:
+            alpha[i] = ((at1-Tice)/(273.16-Tice))**2
+
+    esat_w = 611.2 * np.exp(17.502 * ((at - 273.16)/(at - 32.19)))  # over water
+    esat_i = 611.2 * np.exp(22.587 * ((at - 273.16)/(at + 20.7)))  # over ice
+    h_w = (r_o_r*esat_w)/(pr - (1.0-r_o_r)*esat_w)
+    h_i = (r_o_r*esat_i)/(pr - (1.0-r_o_r)*esat_i)
+
+    hum = rh*(alpha*h_w + (1.0-alpha)*h_i) # kg/kg;
+    rhoair = pr/(at*(Rair - hum*Rair + hum*Rvap))  # kg/m^3
+    qz = hum*rhoair;  # kg/m^3
+    return (hum, qz)
+
+def doy_from_datetime64(dt64):
+    doy = float(dt64.dt.dayofyear.values) # 'dt accessor' must used on DataArray (in this case it is a 0-D DataArray, so values is a single value)
+    doy_seconds = dt64.dt.hour*3600. + dt64.dt.minute*60. + dt64.dt.second \
+                  + dt64.dt.microsecond * 1.e-6
+    return doy + doy_seconds.item() / 86400.
 
 
 def write_get_set_f90_code(params):

@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 from matplotlib.dates import num2date,date2num
 import matplotlib.dates as mdates
 import cmocean
-
+import xarray as xr
+import pandas as pd
 import scipy.io as spio
 
 def loadmat(filename):
@@ -679,9 +680,14 @@ def T_diff_pcolor_plot(ITC_nc_fname,IC_nc_fname):
     itc = kei_read(ITC_nc_fname)
     ic = kei_read(IC_nc_fname)
 
-
+def kei_read_xr(kei_nc):
+    return xr.open_dataset(kei_nc)
 
 if __name__ == '__main__':
+
+    ds = kei_read_xr("/Users/blsaenz/temp/keipy_output/keipytest_macmods_2025-05-13_082010/keipytest_macmods.nc")
+    dude=1
+
 
     for y in [2007,2008,2011]:
 
