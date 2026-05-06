@@ -49,7 +49,7 @@
 
 		! proc switches
 		logical(kind=log_kind), save :: &
-			LKPP  , LRI, LDD, LICE, LBIO, LNBFLX, LTGRID, &
+			LKPP  , LRI, LDD, LICE, LECO, LNBFLX, LTGRID, &
       LSW, & ! seaweed switch
     	lsaveaverages, lstretchgrid, lrepeatdat, &
     	lradtq, lfluxSSTdat, &
@@ -254,7 +254,7 @@
       LRI       = .true.
       LDD       = .true.
       LICE      = .false.
-      LBIO      = .true.
+      LECO      = .true.
       LSW       = .true.
       LTGRID    = .true.
       NZDIV     = 4

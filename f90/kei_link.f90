@@ -209,8 +209,8 @@ CONTAINS
   SUBROUTINE set_param_int(param,value)
     CHARACTER (len=*), intent(in) :: param
     integer(i4), intent(in) :: value
-    if (param == 'lbio') then
-      lbio = value
+    if (param == 'leco') then
+      leco = value
     elseif (param == 'lsw') then
       lsw = value
     elseif (param == 'lice') then
@@ -459,7 +459,7 @@ SUBROUTINE KEI_compute_init
   CALL init_env(U,X)
 
   !!! initialize all kinds of stuff for the kei_eco module
-  IF (lbio) then
+  IF (leco) then
     CALL ecosys_init(hm,zmp)
     if (lsw) then
       CALL sw_init()
@@ -650,7 +650,7 @@ SUBROUTINE KEI_compute_step(nt_in,doy)
       if (lsw .and. sw_i > 0) THEN
             absorp_in(sw_i) = absorp_in(sw_i) + sw_absorp
       endif
-      IF(lbio) THEN
+      IF(leco) THEN
         !!!do estep=1,60
           CALL ecosys_step(kforce,X,fice,albocn,Sref,dtsec,sflux(3,4,0),hmix,nt,startyear, &
                            par_phyto,absorp_in,absorp_out)

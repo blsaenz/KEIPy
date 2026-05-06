@@ -85,7 +85,7 @@ SUBROUTINE init_env(U,X)
   zmp = abs(zm)
 
   ! load initial ecosystem profile
-  !if (lbio)
+  !if (leco)
   !  do i=1,ecosys_tracer_cnt
   !    call kei_init_real(ncf_file,trim(eco_tracer_name(i)),X(:,i+2))
   !  enddo
