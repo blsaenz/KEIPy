@@ -134,6 +134,8 @@ CONTAINS
 
       U_out = U(1:NZ,:)
       X_out = X(1:NZ,:)
+      ! Internal storage keeps salinity anomaly (S - Sref); Python/output expects total salinity.
+      X_out(:,2) = X_out(:,2) + Sref
 
   END SUBROUTINE get_tracers
 
@@ -541,9 +543,6 @@ SUBROUTINE KEI_compute_step(nt_in,doy)
   REAL(r8), intent(in) :: doy ! day-of-year, 1-1 Jan
   REAL(r8) :: swh_out,mwp_out,cmag_out ! MACMODS expects doubles
 
-    ! transform salinity back to KPP version using sref
-    X(:,2) = X(:,2) - Sref
-
     nt = nt_in
 
   ! DO WHILE (nt .le. nend-ndtflx)
@@ -712,9 +711,6 @@ SUBROUTINE KEI_compute_step(nt_in,doy)
 !!!      CALL writerestart(U,X,aflx,atmtemp,atmshum,atmsave,atmsaveav, &
 !!!                       jptr,nt)
 !!!
-    ! transform salinity to total salinity for outputs, etc.
-    X(:,2) = X(:,2) + Sref
-
 END SUBROUTINE KEI_compute_step
 
 
