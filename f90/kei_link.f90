@@ -235,6 +235,8 @@ CONTAINS
 
     if (param == 'time') then
       value = time
+    elseif (param == 'dtsec') then
+      value = REAL(dtsec, r4)
     !elseif (param == 'day') then
     !  value = day
     !elseif (param == 'hour') then

@@ -1,0 +1,252 @@
+# Runtime parameters for ``kei_simulation.compute`` (see ``kei.py``).
+# Top-level keys name the Fortran module under ``kei`` (``kei_common``, ``ice_common`` → ``kei_icecommon``, etc.).
+
+kei_common:
+  # dtsec: 3600.0  # time step [s], dtsec must be 3600.0 until further updates are made to the code
+  lice: 1  # sea-ice model; 1 = use, 0 = disabled in calcs
+  leco: 1  # ecosystem model; 1 = use, 0 = disabled in calcs
+  lsw: 0  # seaweed model (gMACMODS); 1 = use, 0 = disabled in calcs
+  dlon: -71.53101  # °E
+  dlat: -67.11383  # °N
+  # sal_correction_rate: 0.0  # (kg/s)
+  # sw_scale_factor: 1.0      # shortwave scale factor; 1.0 = use full shortwave
+  # jerlov: 3  # Jerlov water type for SW absorption: 0(seasonal variation, see "kei_fluxes.f90") 1=I, 2=IA, 3=IB, 4=II, 5=III
+
+# kei_icecommon:
+#   # SIESTA tunables from ``kei_icecommon``; grid PARAMETERs remain in ``siesta_parameters``.
+#   # If you change ``mean_floe_diameter`` or ``alpha_lateral_melt``, set ``melt_f_denom`` to their product.
+
+#   # --- snow & ice ---
+#   icecon_mod: 2  # satellite ice conc. tweak (0 none, 1 90%→100%, 2 80%→100%)
+#   grid_model: 2  # vertical grid (0 uniform, 1 hi res ends, 2 variable nlayers)
+#   ksnow: 0.33  # snow conductivity (W/m/K)
+#   den_s_dry: 0.35  # dry snow density (g/cm^3)
+#   den_s_wet: 0.35  # wet snow density (g/cm^3)
+#   den_s_switch: -2.0  # snow type vs temperature (°C ref)
+#   bb_f: 0.03  # bubble fraction in sea ice (-)
+#   eps0_s: 0.97  # LW emissivity snow surface (-)
+#   eps0_i: 0.99  # LW emissivity ice surface (-)
+#   eps_snow: 0.97  # LW emissivity snow (same as eps0_s by default)
+#   eps_ice: 0.99  # LW emissivity ice (same as eps0_i by default)
+#   atan_max: 1.557407724654902  # = tan(1), atan multiplier for albedo
+#   atan_c_i: 3.114815449309804  # atan_max/0.5; 0.5 m atan cutoff for albedo
+#   chw: 0.006  # ocean-ice heat transfer coefficient (-)
+#   mu_w_min: 0.05  # min u* ice-ocean (-)
+#   fm_a_switch: 0.9  # area frac. ML frazil under ice
+#   mean_floe_diameter: 30.0  # SIESTA tunable; no trailing ``!`` line in ``kei_icecommon`` (paired with melt_f_denom above)
+#   alpha_lateral_melt: 0.66  # SIESTA tunable; no trailing ``!`` line in ``kei_icecommon`` (paired with melt_f_denom above)
+#   melt_f_denom: 19.8  # legacy mean_floe_diameter*alpha_lateral_melt
+#   # --- desalination / brine ---
+
+#   desal: 7  # desalination scheme index
+#   bv_conv: 200.0  # critical brine volume switch (ppt)
+#   f_sk: 0.5  # skeletal layer convective openness (-)
+#   fb: 0.0511  # brine tube fraction (-)
+#   fi: 0.5  # minimum ice fraction for model (-)
+#   vb_crit: 50.0  # gravity drainage brine volume (ppt)
+#   conv_max: 1.74e-05  # max convective flux (cm^3/cm^2/s)
+#   dbvdt_scale: 1.0  # desal dilution scaling (-)
+#   # --- irradiance / albedo inputs ---
+
+#   alb_s_dry: 0.98  # dry snow albedo (-)
+#   alb_s_wet: 0.88  # wet snow albedo (-)
+#   alb_i_dry: 0.58  # dry ice albedo (-)
+#   alb_i_wet: 0.505  # wet ice albedo (-)
+#   h_snowpatch: 0.02  # bare/snow ice partitioning vs depth
+#   par_to_swd: 2.0  # PAR to broadband SW energy factor (-)
+#   a_ice_ir: 7.18  # mean ice NIR absorption coefficient (700–4000 nm)
+#   par_cf: 0  # PAR cloud fraction correction (0 off, 1 on)
+#   # --- initialization options ---
+
+#   iit: 1  # initial ice temperature mode
+#   iis: 0  # initial salinity mode
+#   iin: 4  # initial nutrient mode
+#   iif: 0  # initial snow flood (m)
+#   s_const: 9.0  # bulk salinity when iis=0 (psu)
+#   n_f: 0.3  # nutrient fraction when iin=2
+#   # --- misc. switches and scalars ---
+
+#   ts_is_at: 0  # fix surface T to air T (0/1)
+#   kevin_light: 0  # light scheme (0 Gregg&Carder, 1 Kevin)
+#   use_pl: 0  # platelet layer (0/1)
+#   ncep_f: 6  # NCEP forcing interval (h)
+#   pr_on: 0  # precip to snow-ice shortcut (0/1)
+#   use_mdiff: 1  # molecular diffusion to ice base (0/1)
+#   no_flooding: 0  # suppress flooding if /=0
+#   flood_brine: 0  # flooding/brine mode
+#   woa_depth: 3  # WOA level for forcing
+#   max_it: 100  # Newton-Raphson max iterations
+#   snow_ridging: 0  # snow ridging mass conservation (0/1)
+#   snow_in_gaps: 1  # snow in ridge gaps (0/1)
+#   min_sal: 0.1  # minimum bulk ice salinity (ppt)
+#   nr_tol: 0.005  # NR tolerance surface temp (-)
+#   gl_max_f: 0.075  # layer boundary adjustment trigger fraction (-)
+#   fl_max_f: 0.075  # same for surface flooding (-)
+#   t_ref: -75.0  # reference for heat integrals (°C)
+#   temp_tol: 1e-07  # temperature iteration tolerance (°C)
+#   fl_crit: -0.02  # min freeboard for surface flood (m)
+#   fl_ratio: 0.5  # ice/water in flooded snow (-)
+#   da_f: 0.4  # lognormal distribution width factor (-)
+#   snow_min: 0.01  # min snow depth treated as snow (m)
+#   gc_offset: 0.0  # hour offset gc_par_ice index
+#   snow_fudge: 1.0  # snow depth multiplier for light (-)
+#   a_factor: 0.3  # snow absorption delta-Eddington (-)
+#   p_factor: 1.0  # ice strength vs momentum scalar (-)
+#   snow_rd_lim: 24.0  # snow distribution redistribution trigger
+#   cv_void_f: 0.3  # convergence void fraction (-)
+#   cvf_switch: 0.6  # thin-ice height scale (m)
+#   cvf_thin: 0.33333333  # thin-ice cv_void_f multiplier (-)
+#   ohf_skew: 0.0  # ocean heat flux additive skew (W/m^2 scale in usage)
+#   at_skew: 0.0  # air temperature additive skew (°C)
+#   snow_skew: 0.0  # snow depth skew — fractional precip mult. (0.5 = +50%)
+
+# kei_ecocommon:
+#   # Ecosystem tunables from ``kei_ecocommon`` (``ecosys_init_apply_ecocommon_parms``).
+#   # Legacy rates: coef ``eco_*_pre_dps`` x dps (dps = 1/86400 s^-1) -> 1/s in ``kei_eco``.
+#   # ``eco_parm_rest_prod_tau_days`` * spd -> ``parm_rest_prod_tau`` (sec).
+
+#   #   Redfield ratios, dissolved & particulate
+
+#   eco_Red_D_C_P: 117.0  # dissolved C:P (carbon:phosphorus)
+#   eco_Red_D_N_P: 16.0  # dissolved N:P (nitrogen:phosphorus)
+#   eco_Red_D_O2_P: 170.0  # dissolved O2:P (oxygen:phosphorus)
+#   eco_Red_Fe_C: 3e-06  # dissolved Fe:C (iron:carbon)
+#   eco_Red_diaz_C_O2_divisor: 150.0  # divisor for parm_Red_D_C_O2_diaz (= C/O2 diaz.)
+#   #   Parameters previously hardcoded (coef x dps -> 1/sec)
+
+#   eco_PCref_pre_dps: 3.0  # coef; → max phyto C-spec. growth rate at Tref (1/sec)
+#   eco_PCrefSp_pre_dps: 4.5  # coef; → small-phyto C-spec. growth at Tref (1/sec)
+#   eco_PCrefDiat_pre_dps: 4.5  # coef; → diatom C-spec. growth at Tref (1/sec)
+#   eco_sp_mort_pre_dps: 0.1  # coef; → small-phyto linear mort rate (1/sec)
+#   eco_sp_mort2_pre_dps: 0.0009  # coef; → small-phyto quad. mort (1/sec/(mmol C/m3)^2 order)
+#   eco_diat_mort_pre_dps: 0.1  # coef; → diatom linear mort rate (1/sec)
+#   eco_diat_mort2_pre_dps: 0.0009  # coef; → diatom quad. mort (1/sec/(mmol C/m3)^2 order)
+#   eco_PCrefDiaz_pre_dps: 0.4  # coef; → diaz C-spec. growth at Tref (1/sec)
+#   eco_diaz_mort_pre_dps: 0.16  # coef; → diaz mort rate (1/sec)
+#   eco_diaz_kPO4: 0.005  # diaz half-sat. P (diatom value)
+#   eco_diaz_kFe: 0.0001  # diaz half-sat. Fe
+#   #   Misc. rate constants
+
+#   eco_sp_agg_rate_max: 0.75  # max aggregation rate small phyto (1/d)
+#   eco_diat_agg_rate_max: 0.75  # max aggregation rate diatoms (1/d)
+#   eco_diat_agg_rate_min: 0.01  # min aggregation rate diatoms (1/d)
+#   eco_fe_scavenge_rate0: 0.12  # initial Fe scavenging rate (% of ambient)
+#   eco_fe_scavenge_thres1: 0.0006  # upper threshold for Fe scavenging
+#   eco_fe_scavenge_thres2: 0.0005  # lower threshold for Fe scavenging
+#   eco_dust_fescav_scale: 83300000.0  # dust scavenging scale factor
+#   eco_thres_fe: 100000.0  # threshold depth for Fe diffusive flux
+#   eco_fe_max_scale1: 3.0  # unitless scaling coefficient
+#   eco_fe_max_scale2_num: 6.0  # numerator for fe_max_scale2 (unitless scaling)
+#   eco_fe_max_scale2_den: 0.0014  # denominator for fe_max_scale2 (matches legacy 6/1.4e-3)
+#   eco_fe_diff_rate: 2.3148e-06  # Fe diffusion rate (nmol Fe/cm^2/sec)
+#   eco_f_fescav_P_iron: 0.1  # fraction of Fe scavenging → particulate Fe
+#   #   Dust -> Fe conversion (see comments in ``kei_ecocommon``)
+
+#   eco_dust_fe_mass_ratio: 0.035  # g Fe per g dust (mass ratio in formula)
+#   eco_dust_fe_molar_mass_g_mol: 55.847  # g Fe / mol Fe
+#   eco_dust_to_fe_nm_scale: 1000000000.0  # scale to nmol Fe
+#   #   Partitioning phytoplankton growth, grazing & losses
+
+#   eco_z_ingest: 0.15  # zoo ingestion coefficient (-)
+#   eco_caco3_poc_min: 0.4  # min QCaCO3 vs grazing loss to POC (mmol C/mmol CaCO3)
+#   eco_spc_poc_fac: 0.22  # small-phyto grazing factor (1/mmol C)
+#   eco_f_graze_sp_poc_lim: 0.24  # (fraction / limit parameter in grazing)
+#   eco_f_prod_sp_CaCO3: 0.026  # fraction of small-phyto prod. as CaCO3 prod.
+#   eco_f_photosp_CaCO3: 0.4  # proportionality small-phyto prod. vs CaCO3 prod.
+#   eco_f_graze_sp_doc: 0.34  # fraction small-phyto grazing → DOC (f_dic derived in eco)
+#   eco_f_z_grz_sqr_diat: 0.81  # grazing nonlinearity squared term (diatoms)
+#   eco_f_graze_diat_poc: 0.26  # fraction diatom grazing → POC
+#   eco_f_graze_diat_doc: 0.13  # fraction diatom grazing → DOC
+#   eco_f_diat_loss_poc: 0.05  # fraction diatom loss → POC (f_dc derived in eco)
+#   eco_f_graze_diaz_zoo: 0.21  # fraction diaz grazing → zooplankton
+#   eco_f_graze_diaz_poc: 0.0  # fraction diaz grazing → POC
+#   eco_f_graze_diaz_doc: 0.24  # fraction diaz grazing → DOC
+#   eco_f_sp_zoo_detr: 0.06666  # zoo losses → detritus when grazing sp (-)
+#   eco_f_diat_zoo_detr: 0.1333  # zoo losses → detritus when grazing diatoms (-)
+#   eco_f_diaz_zoo_detr: 0.03333  # zoo losses → detritus when grazing diaz (-)
+#   eco_f_graze_CaCO3_remin: 0.33  # fraction of sp CaCO3 grazing remineralized (-)
+#   eco_f_graze_si_remin: 0.5  # fraction diatom Si grazing remineralized (-)
+#   #   Fixed ratio: N fixation vs carbon fixation
+
+#   eco_r_Nfix_photo: 1.43  # N fix relative to C fix (-)
+#   #   Stoichiometry N/C, P/C, Si/C, Fe/C, Chl
+
+#   eco_Q: 0.137  # phyto+zoo N/C (mmol/mmol)
+#   eco_Qp: 0.00855  # P/C small phyto diatom zoo (mmol/mmol)
+#   eco_Qp_diaz: 0.002735  # diaz P/C (-)
+#   eco_Qfe_zoo: 2.5e-06  # zoo Fe/C ratio (-)
+#   eco_gQsi_0: 0.137  # initial diatom Si/C (-)
+#   eco_gQfe_diat_0: 6e-06  # initial diatom Fe/C (-)
+#   eco_gQfe_sp_0: 6e-06  # initial small-phyto Fe/C (-)
+#   eco_gQfe_diaz_0: 4.2e-05  # initial diaz Fe/C (-)
+#   eco_gQfe_diat_min: 2.5e-06  # min diatom Fe/C (-)
+#   eco_gQsi_max: 0.685  # max diatom Si/C (-)
+#   eco_gQsi_min: 0.0685  # min diatom Si/C (-)
+#   eco_gQsi_coef: 2.5  # Si/C parameter (-)
+#   eco_gQfe_sp_min: 2.5e-06  # min small-phyto Fe/C (-)
+#   eco_gQfe_diaz_min: 1.4e-05  # min diaz Fe/C (-)
+#   eco_QCaCO3_max: 0.4  # max QCaCO3 (-)
+#   eco_thetaN_max_sp: 2.5  # max Chl/N small phyto (mg Chl/mmol N)
+#   eco_thetaN_max_diat: 4.0  # max Chl/N diatoms (mg Chl/mmol N)
+#   eco_thetaN_max_diaz: 3.4  # max Chl/N diaz (mg Chl/mmol N)
+#   # Denitrification C:N denominator: legacy denitrif_C_N = parm_Red_D_C_P/136 ;
+#   #   net removal 120 mol NO3 per 117 mol C (136 = 120 + 16)
+
+#   eco_denitrif_c_n_denominator: 136.0  # (same lines as Fortran comment above ``eco_denitrif_c_n_denominator``)
+#   #   Loss thresholds & CaCO3 / diaz temperature
+
+#   eco_thres_z1: 10000.0  # threshold depth z: shallow (cm): C_loss full
+#   eco_thres_z2: 20000.0  # threshold depth z: deep (cm): losses → 0
+#   eco_loss_thres_sp: 0.003  # small phyto conc. cutoff for losses → 0 (mmol C/m3 scale)
+#   eco_loss_thres_diat: 0.03  # diatom conc. cutoff (-)
+#   eco_loss_thres_zoo: 0.03  # zoo conc. cutoff (-)
+#   eco_loss_thres_diaz: 0.01  # diaz conc. cutoff (-)
+#   eco_loss_thres_diaz2: 0.001  # diaz conc. threshold low temperature (-)
+#   eco_diaz_temp_thres: 15.0  # °C where diaz conc. threshold transitions
+#   eco_CaCO3_temp_thres1: 1.0  # upper °C threshold CaCO3 production
+#   eco_CaCO3_temp_thres2: -2.0  # lower °C threshold
+#   eco_CaCO3_sp_thres: 3.0  # bloom small-phyto condition (mmol C/m^3)
+#   #   PAR attenuation
+
+#   eco_k_chl: 0.0003  # Chl attenuation (1/cm per mg Chl/m^3)
+#   eco_k_h2o: 0.0004  # water attenuation (1/cm)
+#   eco_f_qsw_par: 0.45  # PAR fraction of shortwave (-)
+#   #   Temperature response for rates (eco Tref/Q_10)
+
+#   eco_Tref_degC: 30.0  # reference temperature (°C)
+#   eco_Q_10_factor: 2.0  # Q10 factor (-)
+#   #   Ecosystem parms (CESM-style naming)
+
+#   eco_parm_Fe_bioavail: 0.02  # fraction of Fe flux bioavailable (-)
+#   eco_parm_prod_dissolve: 0.67  # fraction of production → DOC (-)
+#   eco_parm_o2_min: 4.0  # min O2 for prod/consump. (nmol/cm^3)
+#   eco_parm_no3_min: 32.0  # min NO3 for denitrification (mmol/m^3)
+#   eco_parm_Rain_CaCO3: 0.07  # rain ratio CaCO3 (-)
+#   eco_parm_Rain_SiO2: 0.03  # rain ratio SiO2 (-)
+#   eco_parm_kappa_nitrif_pre_dps: 0.06  # coef; ×dps → nitrification rate (1/s); (=1/d basis)
+#   eco_parm_nitrif_par_lim: 5.0  # PAR limit nitrification (W/m^2)
+#   eco_parm_POC_flux_ref: 0.002  # reference POC flux (nmol C/cm^2/s)
+#   eco_parm_rest_prod_tau_days: 30.0  # restoring prod time-scale (days); ×spd→ sec
+#   eco_parm_rest_prod_z_c: 7500.0  # depth limit restoring prod (cm)
+#   eco_parm_z_umax_0_pre_dps: 1.5  # coef; ×dps → max zoo growth on sphyto at Tref (1/s)
+#   eco_parm_diat_umax_0_pre_dps: 1.5  # coef; ×dps → max zoo growth on diatoms at Tref (1/s)
+#   eco_parm_z_mort_0_pre_dps: 0.17  # coef; ×dps → zoo linear mort (1/s)
+#   eco_parm_z_mort2_0_pre_dps: 0.0035  # coef; ×dps → zoo quadratic mort (1/s per (mmolC/m3))
+#   eco_parm_sd_remin_0_pre_dps: 0.01  # coef; ×dps → small detritus remin (1/s)
+#   eco_parm_sp_kNO3: 0.5  # sp NO3 half-saturation (mmol N/m^3)
+#   eco_parm_diat_kNO3: 2.5  # diatom NO3 half-saturation (mmol N/m^3)
+#   eco_parm_sp_kNH4: 0.01  # sp NH4 half-saturation (mmol N/m^3)
+#   eco_parm_diat_kNH4: 0.1  # diatom NH4 half-saturation (mmol N/m^3)
+#   eco_parm_sp_kFe: 3.5e-05  # sp Fe half-saturation (nmol Fe/m^3)
+#   eco_parm_diat_kFe: 8e-05  # diatom Fe half-saturation (nmol Fe/m^3)
+#   eco_parm_diat_kSiO3: 1.0  # diatom SiO3 half-saturation (mmol SiO3/m^3)
+#   eco_parm_sp_kPO4: 0.01  # sp PO4 half-saturation (mmol P/m^3)
+#   eco_parm_diat_kPO4: 0.1  # diatom PO4 half-saturation (mmol P/m^3)
+#   eco_parm_z_grz: 1.05  # grazing coefficient small phyto (mmol C/m^3 reference)
+#   eco_parm_alphaChl_pre_dps: 0.25  # coef; ×dps → Chl-normalized P-I init slope (GD98 units)
+#   eco_parm_alphaChlsp_pre_dps: 0.28  # same for small phyto (mmol C m^2/(mg Chl W s))
+#   eco_parm_alphaChldiat_pre_dps: 0.25  # same for diatoms
+#   eco_parm_alphaChlphaeo_pre_dps: 0.68  # same for phaeocystis-like pool
+#   eco_parm_labile_ratio: 0.7  # frac. routed directly to DIC (-)
+#   eco_parm_alphaDiaz_pre_dps: 0.036  # coef; ×dps → diaz P-I slope
+#   eco_parm_diaz_umax_0_pre_dps: 1.2  # coef; ×dps → max zoo growth on diaz at Tref (1/s)

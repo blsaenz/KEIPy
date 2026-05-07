@@ -17,7 +17,7 @@
 
 
 '''
-import os,sys,shutil,csv,pickle,math,time,datetime
+import os,sys,shutil,csv,copy,pickle,math,time,datetime
 from calendar import isleap
 import numpy as np
 from numpy import asfortranarray,ascontiguousarray
@@ -65,6 +65,111 @@ def _scalar_int32_from_fortran(raw):
     return np.int32(int(a.item()))
 
 
+# --- Runtime YAML (`kei_runtime_params.yml`): top-level keys -> ``kei.<f90 submodule>`` ---
+
+DEFAULT_RUNTIME_YAML_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    'kei_runtime_params.yml',
+)
+
+
+def _yaml_runtime_scalar(val):
+    if isinstance(val, np.generic):
+        return val.item()
+    return val
+
+
+def _load_runtime_yaml(path):
+    try:
+        import yaml
+    except ImportError as e:
+        raise RuntimeError(
+            'Reading runtime YAML requires PyYAML. '
+            'Install with conda `pyyaml` or pip `pyyaml>=6`.'
+        ) from e
+    with open(path, encoding='utf-8') as f:
+        doc = yaml.safe_load(f)
+    if doc is None:
+        return {}
+    if not isinstance(doc, dict):
+        raise ValueError('Runtime YAML root must be a mapping (dict), got %r' % type(doc))
+    return doc
+
+
+def _deep_merge_runtime_yaml(base, overrides):
+    """Deep-merge runtime YAML mappings (top-level sections are dicts)."""
+    out = copy.deepcopy(base)
+    for k, v in overrides.items():
+        if k in out and isinstance(out[k], dict) and isinstance(v, dict):
+            out[k] = _deep_merge_runtime_yaml(out[k], v)
+        else:
+            out[k] = copy.deepcopy(v)
+    return out
+
+
+def _coerce_kei_common_value(name, val):
+    """YAML numbers for Fortran logicals ``lice`` / ``leco`` / ``lsw`` → Python bool."""
+    val = _yaml_runtime_scalar(val)
+    if name in ('lice', 'leco', 'lsw'):
+        return bool(int(val))
+    return val
+
+
+def _apply_runtime_yaml_doc(kei_mod, doc, warn=None):
+    """Apply nested runtime YAML: each top-level key selects ``kei.<module>``"""
+    if warn is None:
+        warn = print
+    for section_key, mapping in doc.items():
+        if not isinstance(section_key, str) or section_key.startswith('#'):
+            continue
+        if not isinstance(mapping, dict):
+            warn('Runtime YAML: skip non-dict section %r' % (section_key,))
+            continue
+        mod_name = section_key
+        try:
+            mod = getattr(kei_mod, mod_name)
+        except AttributeError:
+            warn('Runtime YAML: unknown section %r (no kei.%s)' % (section_key, mod_name))
+            continue
+        for name, raw_val in mapping.items():
+            if not isinstance(name, str) or name.startswith('#'):
+                continue
+            if mod_name == 'kei_common':
+                val = _coerce_kei_common_value(name, raw_val)
+                try:
+                    for cand in (name, name.lower(), name.upper()):
+                        if hasattr(mod, cand):
+                            setattr(mod, cand, val)
+                            break
+                    else:
+                        raise AttributeError(name)
+                except AttributeError:
+                    warn('Runtime YAML: kei_common has no attribute %r (skipped)' % (name,))
+            else:
+                val = _yaml_runtime_scalar(raw_val)
+                try:
+                    setattr(mod, name, val)
+                except AttributeError:
+                    warn('Runtime YAML: %s has no attribute %r (skipped)' % (mod_name, name))
+
+
+def _resample_dt_seconds(kei_mod):
+    """Python forcing resample interval from Fortran ``kei_common.dtsec``."""
+    return float(kei_mod.link.get_data_real('dtsec'))
+    #return float(_yaml_runtime_scalar(kei_mod.kei_common.dtsec))
+
+
+def _kei_common_flag_int(kei_mod, name):
+    """0/1 for output/API from a Fortran logical on ``kei_common`` (try lower case first)."""
+    for attr in (name.lower(), name.upper()):
+        if hasattr(kei_mod.kei_common, attr):
+            v = getattr(kei_mod.kei_common, attr)
+            if isinstance(v, np.ndarray):
+                v = v.reshape(()).item()
+            return int(bool(v))
+    raise AttributeError('kei_common has no logical %r' % (name,))
+
+
 nf = len(forcing_idx)
 
 grid_vars = ['dm','hm','zm','f_time'] # midpoint depth of cells, at least needed for xarray
@@ -72,34 +177,6 @@ grid_vars = ['dm','hm','zm','f_time'] # midpoint depth of cells, at least needed
 
 # fantastic thing to have around ...
 month_doy = [1,32,60,91,121,152,182,213,244,274,305,335]
-
-
-class kei_parameters(object):
-    # default params (copied per-instance; do not mutate at class level)
-    _defaults = {
-      'dt'  :           3600.0,  # [seconds] 1 Hour default time step
-      'lice':           1,     # ice model enabled
-      'leco':           1,     # ecosystem model enabled
-      'lsw':            0,     # seaweed model enabled
-    }
-
-    def __init__(self, params=None):
-        # each simulation/test gets isolated parameter state
-        self.p = dict(self._defaults)
-        if params is None:
-            params = {}
-        self.update(params)
-
-    def defaults(self):
-        return dict(self._defaults)
-
-    def update(self,params):
-        self.p.update(params)
-        self.build()
-
-    def build(self):
-        '''Perform any supplementary calculations for derived parameters'''
-        pass
 
 
 def _matlab_day_hour_from_f_time(f_time_da):
@@ -353,13 +430,7 @@ class kei_output(object):
                 kei.link.get_data_int(v)
             )
 
-    def write(self,out_filepath,Finterp,params):
-
-        # create output directory
-
-
-        # write KEI parameters, run parameters, any config we can think of
-
+    def write(self,out_filepath,Finterp):
 
         # add compatibility vars for matlab plotting routines
         hour_f, d_part = _matlab_day_hour_from_f_time(self.out_ds['f_time'])
@@ -475,17 +546,40 @@ class kei_simulation(object):
     }
     recompile = False
 
-    # lon, lat are optional now, with defaults, but should be included in forcing data
-    # so that we can have moving simulations
-    def __init__(self,forcing_ds,t_start=None,t_end=None,
-                 lon=None,lat=None,
+    def __init__(self,forcing_ds,runtime_yaml,t_start=None,t_end=None,
                  f90_params=None,recompile=False):
 
         self.update_f90(f90_params,recompile)
         self.update_forcing(forcing_ds,t_start,t_end)
-        self.fixed_lon = lon
-        self.fixed_lat = lat
+        # merged in ``compute`` after ``kei_param_init``
+        self._runtime_yaml_doc = None
+        self.runtime_yaml = runtime_yaml
+        self.apply_runtime_yaml(self.runtime_yaml, reinit=True)        
 
+    def apply_runtime_yaml(self, yaml_path, *, reinit=False):
+        '''
+        Load ``kei_runtime_params.yml``-style YAML: each top-level key names a block whose
+        entries are applied to the matching Fortran extension submodule (``kei_common``,
+        ``ice_common`` → ``kei_icecommon``, ``eco_common`` → ``kei_ecocommon``, or any
+        ``kei.<name>`` present on the built extension).
+
+        Stored on the simulation and re-applied at the start of ``compute`` (after
+        ``kei_param_init``). ``compute`` also loads ``DEFAULT_RUNTIME_YAML_PATH`` if nothing
+        was stored.
+
+        Parameters
+        ----------
+        yaml_path : str
+            Path to YAML (see repository ``kei_runtime_params.yml``).
+        reinit : bool
+            If True, call ``kei.link.kei_param_init()`` before applying (default False).
+        '''
+        _require_fortran_kei()
+        doc = _load_runtime_yaml(yaml_path)
+        self._runtime_yaml_doc = doc
+        if reinit:
+            kei.link.kei_param_init()
+        _apply_runtime_yaml_doc(kei, doc)
 
     def update_f90(self,f90_params=None,recompile=True):
         if f90_params is not None:
@@ -507,18 +601,23 @@ class kei_simulation(object):
           self.t_end = t_end
 
 
-    def compute(self,params,output_path,out_vars=None,run_name='keipy'):
+    def compute(self,output_path,out_vars=None,run_name='keipy',
+                *,runtime_yaml=None,yaml_overrides=None):
 
         # recompile fortran module if requested, then re-import kei
         # .....  to do
         _require_fortran_kei()
 
-        # get instance of kei, perform parameter init, and query dimensions
+        if self._runtime_yaml_doc is not None:
+            doc = copy.deepcopy(self._runtime_yaml_doc)
+        else:
+            doc = _load_runtime_yaml(runtime_yaml or DEFAULT_RUNTIME_YAML_PATH)
+        if yaml_overrides:
+            doc = _deep_merge_runtime_yaml(doc, yaml_overrides)
+
+        # Baseline Fortran constants, then runtime YAML (dlon/dlat/dtsec/switches/tunables)
         kei.link.kei_param_init()
-        if self.fixed_lon is not None:
-            kei.link.set_param_real('dlon',self.fixed_lon)
-        if self.fixed_lat is not None:
-            kei.link.set_param_real('dlat',self.fixed_lat)
+        _apply_runtime_yaml_doc(kei, doc)
 
         nvel = kei.kei_parameters.nvel  # total number of water velocities (2)
         nsclr = kei.kei_parameters.nsclr  # total number of tracers/scalers
@@ -528,8 +627,11 @@ class kei_simulation(object):
         nz = kei.kei_parameters.nz
         n_sw_output = kei.kei_parameters.n_sw_outputs # number of MACMODS outputs
 
-        # prepare & interpolate forcing
-        dt_str = '%is' % params.p['dt']
+        leco = _kei_common_flag_int(kei, 'leco')
+        lsw = _kei_common_flag_int(kei, 'lsw')
+
+        # prepare & interpolate forcing (timestep from Fortran after YAML)
+        dt_str = '%is' % int(round(_resample_dt_seconds(kei)))
         Finterp = self.F0[list(forcing_idx.keys())+['f_time']]
         Finterp = Finterp.sel(f_time=slice(self.t_start, self.t_end))
         Finterp = Finterp.resample({'f_time':dt_str}).interpolate()
@@ -543,14 +645,6 @@ class kei_simulation(object):
         # write out link_test data
         #np.savetxt(r'/Users/blsaenz/Projects/git/keipy/test_data/kf_200_100_2000_savetxt.txt',Fcomp[:,0:1000])
 
-        # update changeable parameters
-        for k,v in params.p.items():
-          if isinstance(v,int):
-            kei.link.set_param_int(k,v)
-          elif isinstance(v,float):
-            kei.link.set_param_real(k,v)
-          else:
-            raise ValueError('Unknown kei parameters type:',k,type(v))
         kei.link.set_param_int('nend', nt)
 
         # init local storage
@@ -593,9 +687,9 @@ class kei_simulation(object):
         else:
             raise ValueError('KEI output path exists!',self.output_path)
         out_var_meta = {**ocn_output_meta, **ice_output_meta}
-        if params.p['leco']:
+        if leco:
             out_var_meta = {**out_var_meta, **ecosys_output_meta}
-            if params.p['lsw']:
+            if lsw:
                 out_var_meta = {**out_var_meta, **sw_output_meta}
         self.out_vars = list(out_var_meta.keys()) if out_vars is None else out_vars
 
@@ -606,12 +700,9 @@ class kei_simulation(object):
         # copy code
         shutil.copytree(os.path.dirname(__file__),os.path.join(self.output_path,'code'))
 
-        # write option to txt and pickle
-        params_csv = os.path.join(self.output_path,run_name+'_keipy_params.csv')
-        with open(params_csv,"w",newline='', encoding='utf-8') as csvfile:
-            w = csv.writer(csvfile)
-            for key, val in params.p.items():
-                w.writerow([key, val])
+        # copy yaml parameters
+        _,yaml_name = os.path.split(self.runtime_yaml)
+        shutil.copy(self.runtime_yaml, os.path.join(self.output_path,yaml_name))
 
         # main loop
 
@@ -629,7 +720,7 @@ class kei_simulation(object):
             Flxsave[...,nt] = kei.link.get_fluxes()
             #Velocity,Tracers = kei.link.get_tracers()
             Vsave[...,nt],Tsave[...,nt] = kei.link.get_tracers()
-            if params.p['lsw']:
+            if lsw:
                 # swSave[...,nt] = kei.link.get_sw_data()
                 swSave[:, nt] = np.asarray(
                     kei.link.get_sw_data(), dtype=np.float64, order="C"
@@ -637,30 +728,36 @@ class kei_simulation(object):
             output.store_step_outvars(kei,nt) # get individual-request outputs
 
         # write output netCDF file
-        output.create_block_outputs(Vsave,Tsave,Flxsave,swSave,params.p['leco'],params.p['lsw'])
+        output.create_block_outputs(Vsave,Tsave,Flxsave,swSave,bool(leco),bool(lsw))
         outfile = os.path.join(self.output_path,run_name+'.nc')
         print('Saving KEI output:',outfile)
-        output.write(outfile,Finterp,params)
+        output.write(outfile,Finterp)
 
 
 if __name__ == '__main__':
 
 
-    # params = kei_parameters()
     # kf_ds = kei_forcing(r'/Users/blsaenz/KEI_run/DATA1/kf_200_100_2000.nc',start_date='2000-01-01', freq='H',legacy_nc=True)
-    # k = kei_simulation(kf_ds,t_start='2000-01-15',t_end='2000-08-15',lon=-71.53101,lat=-67.11383)
-    # k.compute(params,r'/Users/blsaenz/temp/keipy_output',run_name='keipytest5')
+    # k = kei_simulation(kf_ds,t_start='2000-01-15',t_end='2000-08-15')
+    # k.compute(r'/Users/blsaenz/temp/keipy_output',run_name='keipytest5')
 
-    # test with MACMODS
-    params = kei_parameters()
-    params.p['lsw'] = 1
+    # test with MACMODS (enable seaweed via YAML overrides)
     kf_ds = kei_forcing(r'/Users/blsaenz/KEI_run/DATA1/kf_200_100_2000.nc',start_date='2000-01-01', freq='h',legacy_nc=True)
     f_time_dim = kf_ds.sizes['f_time']
     kf_ds['swh'] = ('f_time'), np.full(f_time_dim,0.5) # add swell height [m]
     kf_ds['mwp'] = ('f_time'), np.full(f_time_dim,30.) # add mean wave period [s]
     kf_ds['cmag'] = ('f_time'), np.full(f_time_dim,0.05) # add current speed  [m/s]
-    k = kei_simulation(kf_ds,t_start='2000-01-15',t_end='2000-02-15',lon=-71.53101,lat=-67.11383)
-    k.compute(params,r'/Users/blsaenz/temp/keipy_output',run_name='keipytest_macmods')
+    k = kei_simulation(
+        kf_ds,
+        runtime_yaml='kei_runtime_params.yml',
+        t_start='2000-01-15',
+        t_end='2000-02-15'
+    )
+    k.compute(
+        r'/Users/blsaenz/temp/keipy_output',
+        run_name='keipytest_macmods',
+        #yaml_overrides={'kei_common': {'lsw': 1}},
+    )
 
 
 

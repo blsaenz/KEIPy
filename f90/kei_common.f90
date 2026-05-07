@@ -11,9 +11,10 @@
 		real(r4), save :: &
 			grav,vonk,sbc,twopi,onepi,TK0,spd,dpy,CPo
 
-		! times
-		REAL(r8), save :: &
-			time,dtsec
+		! times — declare ``time`` and ``dtsec`` on separate lines (NumPy f2py can map
+		! consecutive ``real(r8)`` module scalars incorrectly for Python ``kei.kei_common``).
+		REAL(r8), save :: time
+		REAL(r8), save :: dtsec
 		real(r4), save :: &
 			startt,finalt
 		integer(i4), save :: &
@@ -245,7 +246,7 @@
       startt    = 0.0    ! (days) - from 0:00z 1 Jan
       nstart    = 0      ! pretty sure this will always be zero - no need to restart runs with modern computers
       nend      = 13140  ! number total time steps
-      dtsec     = 3600.0 ! time step in seconds
+      dtsec     = 3600.0_r8 ! time step in seconds
       ndtatm    = 1      ! sub-dt atm steps
       ndtice    = 1      ! sub-dt ice steps, likely not used b/c SIESTA does internal stepping
       ndtocn    = 1      ! sub-dt ocean/kpp steps

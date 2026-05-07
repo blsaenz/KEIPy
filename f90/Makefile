@@ -115,7 +115,11 @@ OBJ1D  := kei_kinds.o siesta_constants.o kei_hacks.o siesta_parameters.o siesta_
   kei_subs1D.o kei_atm.o kei_kpp.o kei_ocn.o \
   kei_sw.o
 
-F901D  := kei_parameters.f90 kei_common.f90 kei_icecommon.f90 kei_link.f90
+# f2py must compile these .f90 files to expose ``kei.<module>`` in Python (see ``kei.py`` YAML).
+# Omit ``kei_ecocommon.o`` from the link list so f2py compiles ``kei_ecocommon.f90`` once (no duplicate symbols).
+OBJ1D_F2PY := $(filter-out kei_ecocommon.o,$(OBJ1D))
+
+F901D  := kei_parameters.f90 kei_common.f90 kei_icecommon.f90 kei_ecocommon.f90 kei_link.f90
 
 MACMODS_OBJ := macmods_mod.o macmods_param_mod.o macmods_kinds_mod.o \
   macmods_util_mod.o macmods_calc.o
@@ -135,7 +139,7 @@ FFLAGS :=  $(BUG)
 kei: $(OBJ1D)
 # Non-conda: Accelerate inside ``--f90flags`` and numpy ``--link-lapack_opt``. Conda: ``F2PY_EXT_LIBS``.
 	$(PYTHON) -m numpy.f2py -c --f90exec="gfortran" --f90flags="$(FFLAGS) $(LAPACK_F90_PY) $(F2PY_F90_MOD_INC)" \
-		$(F2PY_EXT_LIBS) $(F2PY_LINK_LAPACK) $(OBJ1D) $(F901D) $(MACMODS_OBJ) -m kei
+		$(F2PY_EXT_LIBS) $(F2PY_LINK_LAPACK) $(OBJ1D_F2PY) $(F901D) $(MACMODS_OBJ) -m kei
 
 # compile routines
 kei_fluxes.o: kei_hacks.o

@@ -29,9 +29,12 @@ def test_kei_forcing_builds_dataset_from_dict():
         assert ds[v].dims == ("zm",)
 
 
-def test_kei_parameters_class_updates():
-    p = keipy.kei_parameters()
-    assert p.p["dt"] == 3600.0
-    p.update({"dt": 1800.0, "lsw": 1})
-    assert p.p["dt"] == 1800.0
-    assert p.p["lsw"] == 1
+def test_kei_runtime_yaml_has_driver_keys_under_kei_common():
+    """Driver scalars live under ``kei_common`` in YAML, matching ``kei.kei_common``."""
+    from pathlib import Path
+
+    yaml_path = Path(__file__).resolve().parent.parent / "kei_runtime_params.yml"
+    doc = keipy._load_runtime_yaml(str(yaml_path))
+    kc = doc["kei_common"]
+    for k in ("dtsec", "dlon", "dlat", "lice", "leco", "lsw"):
+        assert k in kc

@@ -1,14 +1,12 @@
 # Build ``f90/kei``: ``make -C f90 kei`` (see ``f90/Makefile``).
 #
 # Python >= 3.12: NumPy f2py uses Meson. Fortran + LAPACK binaries (``openblas``, ``compilers``)
-# are not published on PyPI; keep them in Conda alongside Python. Use the pinned stack in:
+# are not published on PyPI; you sohuld use confa-forge to install them with miniforge/mamba or micromamba:
 #   environment.yml
 # Typical one-liner (conda-forge only):
-#   mamba install --override-channels -c conda-forge compilers liblapack meson ninja charset-normalizer
-# Then ``pip install -e .`` (or conda ``pip``, ``numpy``, ``pytest`` from the same yaml).
-#
-# If your network blocks public repos, configure a conda-forge mirror; automated agents should not
-# assume they can reach any package host.
+#   mamba install --override-channels -c conda-forge compilers liblapack meson ninja charset-normalizer 
+# Then just run from code or ``pip install -e .``
+
 
 [project]
 name = "keipy"
@@ -20,6 +18,9 @@ description = "KPP-Ecosystem-Ice (KEI) Python driver and Fortran bindings"
 # Pip-installed dev tools only. Fortran toolchain / OpenBLAS / Meson: see ``environment.yml``.
 dev = [
   "pytest>=7",
+]
+yaml = [
+  "pyyaml>=6",
 ]
 
 [tool.pytest.ini_options]

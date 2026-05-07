@@ -77,9 +77,6 @@ def _run_main_block_workflow(out_base: Path) -> tuple[Path, Path]:
     if not _REF_NC.is_file():
         pytest.skip(f"Reference NetCDF not found: {_REF_NC}")
 
-    params = keipy.kei_parameters()
-    params.p["lsw"] = 1
-
     kf_ds = keipy.kei_forcing(
         nc_file=str(_INPUT_NC),
         start_date="2000-01-01",
@@ -95,11 +92,14 @@ def _run_main_block_workflow(out_base: Path) -> tuple[Path, Path]:
         kf_ds,
         t_start="2000-01-15",
         t_end="2000-02-15",
-        lon=-71.53101,
-        lat=-67.11383,
     )
     out_base.mkdir(parents=True, exist_ok=True)
-    k.compute(params, str(out_base), run_name="test_output")
+    k.apply_runtime_yaml('kei_runtime_params.yml')
+    k.compute(
+        str(out_base),
+        run_name="test_output",
+        yaml_overrides={"kei_common": {"lsw": 1}},
+    )
 
     run_dirs = sorted(out_base.glob("test_output_*"))
     assert len(run_dirs) == 1, f"expected one output directory, got {run_dirs!r}"

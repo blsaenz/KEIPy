@@ -1,9 +1,10 @@
 # Conda-native stack for ``make -C f90 kei`` (compilers + OpenBLAS + Meson tooling).
-# Create/update an env:
+# Example setup: create/update an env with miniforge/mamba:
 #   mamba env create -f environment.yml --name py313    # initial
 #   mamba env update -f environment.yml --name py313    # merge packages
 channels:
   - conda-forge
+  - nodefaults
 channel_priority: strict
 dependencies:
   - python>=3.11,<3.14
@@ -19,4 +20,5 @@ dependencies:
   - meson
   - ninja
   - charset-normalizer     # Fortran sources with UTF-8 comments (NumPy Meson parses as text)
+  - pyyaml                 # ``kei_simulation.apply_runtime_yaml`` / ``kei_runtime_params.yml``
   - pytest>=7              # matches ``[project.optional-dependencies] dev``

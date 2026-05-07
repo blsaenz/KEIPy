@@ -604,7 +604,7 @@ SUBROUTINE calflx(jptr)
     mon = int(dble(swtime/dpy)*12.) + 1 !(swtime/30.147) with dpy=365.
     mon = MIN0(mon,12)
 
-    if ( jerlov < 1. ) then
+    if ( jerlov < 1 ) then
         j = jerl(mon)
     else
         j = jerlov
