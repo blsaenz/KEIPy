@@ -17,7 +17,7 @@
   - This is breaking change, in the sense that the setup, build, and packaging are different that pervious verions. The underslying model is unchanged.
 
 
-## 1.1.0: `archive/Czajka_et_al_WAP` - Archive of version used for Czajka et al. 2026 (https://onlinelibrary.wiley.com/doi/abs/10.1029/2025JG009428)
+## v1.1.0: `archive/Czajka_et_al_WAP` - Archive of version used for Czajka et al. 2026 (https://onlinelibrary.wiley.com/doi/abs/10.1029/2025JG009428)
 
 ### Changes below were made to calibrate the ecosystem model for use in the West Antarctic Pennisula.
   - Updated nine ecosystem parameters with values from Czajka et al. WAP experiments:
@@ -40,4 +40,4 @@
     - `CaCO3_PROD`, `CaCO3_REMIN` — surface-layer CaCO3 production and remineralization
     - `PAR_out` — per-layer photosynthetically available radiation
 
-## 1.0.0: Original release used in Saenz et al. 2021 (https://doi.org/10.1017/jog.2023.36)
+## v1.0.0: Original release used in Saenz et al. 2021 (https://doi.org/10.1017/jog.2023.36)
